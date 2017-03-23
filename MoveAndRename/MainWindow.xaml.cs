@@ -99,13 +99,20 @@ namespace MoveAndRename
 				}
 				
 			}
+            /*
 			for (int i = 0; i < newDirectories.Count; i++)
 			{
 				listBox.Items.Add(newDirectories[i]);
 			}
+            */
 
-			return res;
+            return newDirectories;
 		}
+
+        private void updateList(List<string> strList)
+        {
+            listBox.ItemsSource = strList;
+        }
 
 		private List<Series> convertStringToSeries(List<String> stringList)
 		{
@@ -197,6 +204,18 @@ namespace MoveAndRename
 			return hs;
 		}
 
+        /*
+         * TODO: Change settings file from .txt to .xml
+         * 
+         * 
+         */
+
+        private void moveFile(string path, Series ser) {
+
+            String destination = "";
+            File.Move(path, destination);
+        }
+        
 		private void showMatches(HashSet<Series> seriesSet)
 		{
 			string seasonNumber;
@@ -226,8 +245,24 @@ namespace MoveAndRename
 		private void button_Click(object sender, RoutedEventArgs e)
 		{
 			TVDB t = createTVDBObj();
-			HashSet<Series> res = findMatch(t, new Series("Homeland", 6, 9));
-			showMatches(res);
+
+            List<string> ls = getNewSeries();
+            updateList(ls);
+            List<Series> s = convertStringToSeries(ls);
+
+            List<HashSet<Series>> lh = new List<HashSet<Series>>();
+            foreach (var item in s)
+            {
+                HashSet<Series> h = findMatch(t, item);
+                lh.Add(h);
+            }
+
+            foreach (var set in lh)
+            {
+                showMatches(set);
+            }
+			//HashSet<Series> res = findMatch(t, new Series("Homeland", 6, 9));
+			//showMatches(res);
 		}		
 	}
 
