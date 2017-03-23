@@ -14,3 +14,20 @@ c:\users\johan\documents\visual studio 2015\Projects\MoveAndRename\MoveAndRename
 c:\users\johan\documents\visual studio 2015\Projects\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.pdb
 C:\Users\Johan\documents\visual studio 2015\Projects\MoveAndRename\MoveAndRename\obj\Debug\SettingsWindow.g.cs
 C:\Users\Johan\documents\visual studio 2015\Projects\MoveAndRename\MoveAndRename\obj\Debug\SettingsWindow.baml
+D:\Development\GitHub\MoveAndRename\MoveAndRename\bin\Debug\MoveAndRename.exe.config
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.exe
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.pdb
+D:\Development\GitHub\MoveAndRename\MoveAndRename\bin\Debug\MoveAndRename.exe
+D:\Development\GitHub\MoveAndRename\MoveAndRename\bin\Debug\MoveAndRename.pdb
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.csprojResolveAssemblyReference.cache
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MainWindow.g.cs
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\SettingsWindow.g.cs
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\App.g.cs
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename_MarkupCompile.cache
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename_MarkupCompile.lref
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MainWindow.baml
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\SettingsWindow.baml
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.g.resources
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.Properties.Resources.resources
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.csproj.GenerateResource.Cache
+D:\Development\GitHub\MoveAndRename\MoveAndRename\bin\Debug\TVDBSharp.dll

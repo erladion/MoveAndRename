@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:MoveAndRename"
         xmlns:dxb="http://schemas.devexpress.com/winfx/2008/xaml/bars" x:Class="MoveAndRename.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400" Width="600">
-    <Grid>        
+        Title="MainWindow" Height="500" Width="700" SizeChanged="Window_SizeChanged">
+    <Grid>
         <DockPanel>
             <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_File">
@@ -15,11 +15,13 @@
                     <MenuItem Header="_Close"></MenuItem>
                     <MenuItem Header="_Save"></MenuItem>
                     <MenuItem Name="Settings" Header="_Settings" Click="Settings_Click"></MenuItem>
-                </MenuItem>                
+                </MenuItem>
             </Menu>
         </DockPanel>
         <Button x:Name="refreshButton" Content="Refresh" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10" Click="refreshButton_Click"/>
+        <Button x:Name="button" Content="Button" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="426,0,0,10" Click="button_Click"/>
         <ListBox x:Name="listBox" HorizontalAlignment="Left" Height="300" Margin="10,27,0,0" VerticalAlignment="Top" Width="256"/>
-    </Grid>    
+        <ListBox x:Name="listBox1" HorizontalAlignment="Right" Height="300" VerticalAlignment="Top" Width="256" Margin="0,27,10,0"/>
+    </Grid>
 </Window>
 

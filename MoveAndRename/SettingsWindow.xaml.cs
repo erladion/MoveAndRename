@@ -20,6 +20,11 @@ namespace MoveAndRename
 	{
 		Paths
 	}
+	enum Paths
+	{
+		Exclude,
+		Include
+	}
 	/// <summary>
 	/// Interaction logic for SettingsWindow.xaml
 	/// </summary>
@@ -28,6 +33,8 @@ namespace MoveAndRename
 		public int settingsHeight;
 		private ListBox lb;
 		private bool listVsTree = false;
+		private List<string> excludeList = new List<string>();
+		private List<string> includeList = new List<string>();
 
 		public SettingsWindow()
 		{
@@ -38,7 +45,19 @@ namespace MoveAndRename
 			listView.Items.Add(Settings.Paths);
 
 			treeView.Height = this.Height - 60;
-			treeView.Items.Add(Settings.Paths);
+			//treeView.Items.Add(Settings.Paths);
+
+			TreeViewItem tvi = new TreeViewItem();
+			tvi.Header = Settings.Paths;
+			List<Paths> p = new List<Paths>();
+			foreach (Paths item in Enum.GetValues(typeof(Paths)))
+			{
+				p.Add(item);
+			}
+			tvi.ItemsSource = p;
+
+			treeView.Items.Add(tvi);
+			
 
 			if (listVsTree == true)
 			{
@@ -109,20 +128,27 @@ namespace MoveAndRename
 		private void createPathsFile()
 		{
 			FileStream fs;
-			StreamWriter sw = new StreamWriter("paths.txt");
+			StreamWriter sw;
 
 			if (!File.Exists("paths.txt"))
 			{
 				fs = File.Create("paths.txt");
-			}
-			else
+				fs.Close();
+			}			
+
+			sw = new StreamWriter("paths.txt");			
+				
+			sw.WriteLine("Include " + includeList.Count);
+			foreach (var includeItem in includeList)
 			{
-				foreach (var item in lb.Items)
-				{
-					MessageBox.Show(item.ToString());
-					sw.WriteLine(item.ToString());
-				}
+				sw.WriteLine(includeItem);
 			}
+			
+			sw.WriteLine("Exclude " + excludeList.Count);
+			foreach (var excludeItem in excludeList)
+			{
+				sw.WriteLine(excludeItem);
+			}			
 			sw.Close();
 		}
 
@@ -136,7 +162,20 @@ namespace MoveAndRename
 			var dialog = new System.Windows.Forms.FolderBrowserDialog();
 			System.Windows.Forms.DialogResult res = dialog.ShowDialog();
 			string path = dialog.SelectedPath;
-			lb.Items.Add(path);			
+
+			bool includeOrExclude = treeView.SelectedItem.ToString() == "Include" ? true : false;
+			if (includeOrExclude)
+			{
+				includeList.Add(path);
+				lb.ItemsSource = includeList;
+			}
+			else
+			{
+				excludeList.Add(path);
+				lb.ItemsSource = excludeList;
+			}
+			createPathsFile();
+			showPaths(includeOrExclude ? "Include" : "Exclude");			
 		}
 
 		private void showIncludePaths()
@@ -150,7 +189,7 @@ namespace MoveAndRename
 			string str = sr.ReadLine();
 			while (str != "Exclude" || !sr.EndOfStream)
 			{
-				lb.Items.Add(str);
+				includeList.Add(str);
 				if (!sr.EndOfStream)
 				{
 					str = sr.ReadLine();
@@ -160,14 +199,92 @@ namespace MoveAndRename
 					break;
 				}
 			}
+			sr.Close();
+			lb.ItemsSource = includeList;
+		}		
+
+		private void showPaths(string includeOrExclude)
+		{
+			if (File.Exists("paths.txt"))
+			{
+				StreamReader sr = new StreamReader("paths.txt");
+
+				if (includeOrExclude == "Include")
+				{
+					includeList = new List<string>();
+					if (sr.EndOfStream)
+					{
+						return;
+					}
+					string str = sr.ReadLine();
+					while (!str.Contains("Exclude") || !sr.EndOfStream)
+					{
+						if (str.Contains("Include"))
+						{
+							str = sr.ReadLine();
+							if (str.Contains("Exclude"))
+							{
+								break;
+							}
+							includeList.Add(str);
+						}
+						if (!sr.EndOfStream)
+						{
+							if (str.Contains("Exclude"))
+							{
+								break;
+							}
+							str = sr.ReadLine();							
+						}
+						else
+						{
+							break;
+						}
+					}
+					sr.Close();
+					lb.ItemsSource = includeList;
+				}
+				else
+				{
+					excludeList = new List<string>();
+					if (sr.EndOfStream)
+					{
+						return;
+					}
+					string[] s = sr.ReadLine().Split(' ');
+					for (int i = 0; i < Convert.ToInt32(s[1]); i++)
+					{
+						sr.ReadLine();
+						continue;
+					}
+					s = sr.ReadLine().Split(' ');
+					for (int i = 0; i < Convert.ToInt32(s[1]); i++)
+					{
+						string st = sr.ReadLine();
+						excludeList.Add(st);
+					}
+					lb.ItemsSource = excludeList;
+					sr.Close();
+				}
+			}
+			else
+			{
+				createPathsFile();
+			}
 		}
 
 		private void treeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			if(treeView.SelectedItem.ToString() == Settings.Paths.ToString())
+			if(treeView.SelectedItem.ToString() == Paths.Include.ToString())
 			{
 				addPathsControls();
-				showIncludePaths();
+				//showIncludePaths();
+				showPaths(Paths.Include.ToString());
+			}
+			else if(treeView.SelectedItem.ToString() == Paths.Exclude.ToString())
+			{
+				addPathsControls();
+				showPaths(Paths.Exclude.ToString());
 			}
 		}
 	}
