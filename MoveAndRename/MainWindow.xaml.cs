@@ -15,6 +15,8 @@ using System.Windows.Shapes;
 using System.IO;
 using TVDBSharp;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
+using System.ComponentModel;
 
 namespace MoveAndRename
 {
@@ -23,13 +25,55 @@ namespace MoveAndRename
     /// </summary>
     public partial class MainWindow : Window
     {
+		public bool debug = true;
 		SettingsWindow settings;
+		public HashSet<string> excludeList = new HashSet<string>();
+		public HashSet<string> includeList = new HashSet<string>();
+		public HashSet<string> destinationList = new HashSet<string>();
+		Settings setObj = new Settings();
+		private string settingsFilePath = "settings.xml";
+		
         public MainWindow()
         {
-            InitializeComponent();
+			if (debug)
+			{
+				AllocConsole();
+			}			
+			InitializeComponent();
 			refreshButton.VerticalAlignment = VerticalAlignment.Bottom;
 			listBox.Height = this.Height - 100;
+			setObj.readSettingsFromXml(settingsFilePath);
+
+			setObj.PropertyChanged += settingsChanged;
         }
+
+		private void setTooltips()
+		{
+			ToolTip t = new ToolTip();
+			t.IsOpen = true;
+			t.StaysOpen = false;
+			t.Content = "Search for new series episodes or movies in the directores given in settings.";
+			refreshButton.ToolTip = t;
+		}
+
+		// Used to a attach a console window to the application, the console window is used when in debug mode.
+		[DllImport("kernel32.dll", SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		static extern bool AllocConsole();
+
+		private void settingsChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == "settings")
+			{
+				setObj.writeSettingsToXml(settingsFilePath);			
+			}
+		}
+
+		private void updateListbox(ListBox lb, HashSet<string> data)
+		{
+			lb.ItemsSource = null;
+			lb.ItemsSource = data;
+		}
 
 		private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
@@ -44,8 +88,9 @@ namespace MoveAndRename
 
 		private void Settings_Click(object sender, RoutedEventArgs e)
         {
-			settings = new SettingsWindow();
-			settings.Show();		
+			setObj.readSettingsFromXml(settingsFilePath);
+			settings = new SettingsWindow(setObj);
+			settings.Show();			
 		}
 
 		private void refreshButton_Click(object sender, RoutedEventArgs e)
@@ -56,29 +101,10 @@ namespace MoveAndRename
 		private List<string> getNewSeries()
 		{
 			List<string> res = new List<string>();
-			StreamReader sr = new StreamReader("paths.txt");
 
 			List<string> newDirectories = new List<string>();
+			HashSet<string> excludeList = setObj.ExcludeList;			
 
-			List<string> excludeList = new List<string>();
-			
-
-			while (!sr.EndOfStream)
-			{
-				string str = sr.ReadLine();
-				string[] sp = str.Split(' ');
-				for (int i = 0; i < Convert.ToInt32(sp[1]); i++)
-				{
-					res.Add(sr.ReadLine());
-				}
-				str = sr.ReadLine();
-				string[] sp2 = str.Split(' ');
-				for (int i = 0; i < Convert.ToInt32(sp2[1]); i++)
-				{
-					excludeList.Add(sr.ReadLine());
-				}				
-			}
-			sr.Close();
 			for (int i = 0; i < res.Count; i++)
 			{
 				try
@@ -99,13 +125,6 @@ namespace MoveAndRename
 				}
 				
 			}
-            /*
-			for (int i = 0; i < newDirectories.Count; i++)
-			{
-				listBox.Items.Add(newDirectories[i]);
-			}
-            */
-
             return newDirectories;
 		}
 
@@ -182,13 +201,11 @@ namespace MoveAndRename
 		private HashSet<Series> findMatch(TVDB obj, Series series)
 		{
 			HashSet<Series> hs = new HashSet<Series>(new SeriesComparer());
-			//List<Series> res = new List<Series>();
 
 			var results = obj.Search(series.Name, 20);
 
 			foreach (var ser in results)
 			{
-				//MessageBox.Show(ser.ImdbId);
 				foreach (var episode in ser.Episodes)
 				{
 					if(episode.EpisodeNumber == series.Episode && episode.SeasonNumber == series.Season)
@@ -204,15 +221,105 @@ namespace MoveAndRename
 			return hs;
 		}
 
-        /*
-         * TODO: Change settings file from .txt to .xml
-         * 
-         * 
-         */
+		struct DestObj {
+			public int count;
+			public string str;
+		}
 
+		class DestObjComp : IEqualityComparer<DestObj>
+		{
+			public bool Equals(DestObj a, DestObj b)
+			{
+				if (a.str.ToLower() == b.str.ToLower())
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			public int GetHashCode(DestObj s)
+			{
+				return s.str.ToLower().GetHashCode();
+			}
+		}
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="ser"></param>
+		private void getDestinationPath(Series ser)
+		{
+			List<string> possibleDirectories = new List<string>();
+			List<DestObj> de = new List<DestObj>();
+			Console.WriteLine(setObj.DestinationList.Count);
+			foreach (var item in setObj.DestinationList)
+			{
+				string[] subDirectories = Directory.GetDirectories(item);
+				
+				for (int i = 0; i < subDirectories.Length; i++)
+				{
+					List<string> subdirname = subDirectories[i].Split('\\').ToList();					
+					string[] splitSer = ser.Name.ToLower().Split(' ');
+					DestObj deo = new DestObj();
+					deo.count = 0;
+					deo.str = "";
+					for (int j = 0; j < splitSer.Length; j++)
+					{
+						Console.WriteLine("---");
+						Console.WriteLine("Currently checking if: " + subdirname.Last().ToLower() + " contains " + splitSer[j].ToLower());
+						if (subdirname.Last().ToLower().Contains(splitSer[j].ToLower())) {
+							Console.WriteLine("Yes it did");
+							deo.count++;
+							deo.str += splitSer[j] + " ";
+						}
+						Console.WriteLine("---");
+					}
+					if (!de.Contains(deo))
+					{
+						de.Add(deo);
+					}					
+				}				
+			}
+
+			de.Sort(new DestObjComparer());
+			Console.WriteLine("Searched for: " + ser.Name);
+			Console.WriteLine("Best match: " + de[0].str);
+			Console.WriteLine("_________________________");
+			foreach (var item in de)
+			{
+				Console.WriteLine("Matches: " + item.count.ToString() + " str " + item.str);
+			}
+			Console.WriteLine("_________________________");
+		}
+
+		private class DestObjComparer : IComparer<DestObj>
+		{
+			public int Compare(DestObj a, DestObj b)
+			{
+				if(a.count < b.count)
+				{
+					return 1;
+				}
+				else if(a.count > b.count)
+				{
+					return -1;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Moves a series file to the specified path
+		/// </summary>
+		/// <param name="path">Destination path</param>
+		/// <param name="ser">Series object for the file to be moved</param>
         private void moveFile(string path, Series ser) {
-
             String destination = "";
+			var dirs = Directory.GetDirectories("");
             File.Move(path, destination);
         }
         
@@ -244,6 +351,9 @@ namespace MoveAndRename
 
 		private void button_Click(object sender, RoutedEventArgs e)
 		{
+			Series ser = new Series("A hidden rock", 1, 1);
+			getDestinationPath(ser);
+			/*
 			TVDB t = createTVDBObj();
 
             List<string> ls = getNewSeries();
@@ -263,7 +373,19 @@ namespace MoveAndRename
             }
 			//HashSet<Series> res = findMatch(t, new Series("Homeland", 6, 9));
 			//showMatches(res);
-		}		
+			*/
+		}
+
+		private void refreshButton_ToolTipOpening(object sender, ToolTipEventArgs e)
+		{
+			Button b = sender as Button;
+			b.ToolTip = "Search for new series episodes or movies in the directores given in settings.";
+		}
+
+		private void button_ToolTipOpening(object sender, ToolTipEventArgs e)
+		{
+			
+		}
 	}
 
 	class SeriesComparer : IEqualityComparer<Series>
@@ -283,5 +405,5 @@ namespace MoveAndRename
 		{
 			return s.EpisodeName.GetHashCode();
 		}
-	}
+	}	
 }

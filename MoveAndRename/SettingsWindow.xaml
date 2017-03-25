@@ -5,17 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MoveAndRename"
         mc:Ignorable="d"
-        Title="SettingsWindow" Height="400" Width="400">
+        Title="SettingsWindow" Height="400" Width="450">
     <Grid Name="ControlsGrid" SizeChanged="Grid_SizeChanged">
-        <ListView x:Name="listView" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0" Width="100" PreviewMouseLeftButtonUp="listView_ItemActivate">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn/>
-                </GridView>
-            </ListView.View>
-        </ListView>
-        <Grid Name="Content" HorizontalAlignment="Left" Margin="115,10,0,0" VerticalAlignment="Top" Width="267"/>
-        <TreeView x:Name="treeView" HorizontalAlignment="Left" Height="100" Margin="10,10,0,0" VerticalAlignment="Top" Width="100" SelectedItemChanged="treeView_SelectedItemChanged"/>
+        <Grid Name="Content" HorizontalAlignment="Right" Margin="0,15,15,0" VerticalAlignment="Top" Width="240"/>
+        <TreeView x:Name="treeView" HorizontalAlignment="Left" Height="100" Margin="15,15,0,0" VerticalAlignment="Top" Width="120" SelectedItemChanged="treeView_SelectedItemChanged"/>
 
     </Grid>
 </Window>

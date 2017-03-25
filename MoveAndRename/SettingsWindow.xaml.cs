@@ -13,279 +13,175 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.IO;
 using Microsoft.Win32;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace MoveAndRename
 {
-	enum Settings
+	enum ESettings
 	{
 		Paths
 	}
 	enum Paths
 	{
 		Exclude,
-		Include
+		Include,
+		Destinations
 	}
 	/// <summary>
 	/// Interaction logic for SettingsWindow.xaml
 	/// </summary>
 	public partial class SettingsWindow : Window
 	{
-		public int settingsHeight;
-		private ListBox lb;
-		private bool listVsTree = false;
-		private List<string> excludeList = new List<string>();
-		private List<string> includeList = new List<string>();
+		private bool debug = true;
+		public double settingsHeight;
+		public double settingsWidth;
+		private ListBox lb = new ListBox();
+		Settings settingsObj;
 
-		public SettingsWindow()
-		{
-			settingsHeight = (int)this.Height;
-			InitializeComponent();
-
-			listView.Height = this.Height - 60;
-			listView.Items.Add(Settings.Paths);
+		public SettingsWindow(Settings settingsObject)
+		{			
+			settingsHeight = this.Height;
+			settingsWidth = this.Width;
+			InitializeComponent();			
 
 			treeView.Height = this.Height - 60;
-			//treeView.Items.Add(Settings.Paths);
-
 			TreeViewItem tvi = new TreeViewItem();
-			tvi.Header = Settings.Paths;
+			tvi.Header = ESettings.Paths;
 			List<Paths> p = new List<Paths>();
 			foreach (Paths item in Enum.GetValues(typeof(Paths)))
 			{
 				p.Add(item);
 			}
 			tvi.ItemsSource = p;
-
 			treeView.Items.Add(tvi);
-			
 
-			if (listVsTree == true)
-			{
-				listView.Visibility = Visibility.Hidden;
-			}
-			else
-			{
-				treeView.Visibility = Visibility.Visible;
-			}
+			settingsObj = settingsObject;		
 		}	
 
 		private void Grid_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
 			settingsHeight = (int)this.Height;
-			listView.Height = settingsHeight - 60;
-			Content.Height = settingsHeight - 60;			
+			settingsWidth = (int)this.Width;
+			Content.Width = settingsWidth * 0.55;
+			Content.Height = settingsHeight - 60;
+			treeView.Width = settingsWidth * 0.3;
+			treeView.Height = settingsHeight - 60;
+			lb.Width = settingsWidth * 0.55;
 		}		
-		
-		private void listView_ItemActivate(object sender, MouseButtonEventArgs e)
-		{
-			try
-			{
-				if (listView.SelectedItem.ToString() == Settings.Paths.ToString())
-				{
-					addPathsControls();
-					showIncludePaths();					
-				}				
-			}
-			catch (Exception)
-			{
-				return;
-			}
-			
-		}
 		
 		private void addPathsControls()
 		{
+			if(Content.Children.Count > 0)
+			{
+				Content.Children.RemoveAt(0);
+			}
+
 			lb = new ListBox();
 			lb.Height = settingsHeight - 150;
-			lb.Width = 250;
+			lb.Width = settingsWidth * 0.55;
 			lb.VerticalAlignment = VerticalAlignment.Top;
-			Content.Children.Add(lb);
+			lb.HorizontalAlignment = HorizontalAlignment.Right;
+			Content.Children.Insert(0, lb);
 
 			Button add = new Button();
 			add.Content = "Add";
-			add.Height = 25;
-			add.Width = 100;
+			add.Height = 20;
+			add.Width = 75;
 			add.HorizontalAlignment = HorizontalAlignment.Left;
 			add.VerticalAlignment = VerticalAlignment.Bottom;
-			add.Margin = new Thickness(5, 0, 0, 5);
+			add.Margin = new Thickness(0, 0, 0, 5);
 
 			add.Click += new RoutedEventHandler(add_Click);
 			Content.Children.Add(add);
+			
+			Button remove = new Button();
+			remove.Content = "Remove";
+			remove.Height = 20;
+			remove.Width = 75;
+			remove.VerticalAlignment = VerticalAlignment.Bottom;
+			remove.HorizontalAlignment = HorizontalAlignment.Left;
+			remove.Margin = new Thickness(add.Width+5, 0, 0, 5);			
 
-			Button save = new Button();
-			save.Content = "Save";
-			save.Height = 25;
-			save.Width = 100;
-			save.HorizontalAlignment = HorizontalAlignment.Right;
-			save.VerticalAlignment = VerticalAlignment.Bottom;
-			save.Margin = new Thickness(0, 0, 5, 5);
-
-
-			save.Click += new RoutedEventHandler(save_Click);
-			Content.Children.Add(save);
+			remove.Click += new RoutedEventHandler(remove_Click);
+			Content.Children.Add(remove);			
 		}		
 
-		private void createPathsFile()
+		private void remove_Click(object sender, EventArgs e)
 		{
-			FileStream fs;
-			StreamWriter sw;
+			Paths p = (Paths)treeView.SelectedItem;
+			string path = lb.SelectedItem.ToString();
 
-			if (!File.Exists("paths.txt"))
+			switch (p)
 			{
-				fs = File.Create("paths.txt");
-				fs.Close();
-			}			
-
-			sw = new StreamWriter("paths.txt");			
-				
-			sw.WriteLine("Include " + includeList.Count);
-			foreach (var includeItem in includeList)
-			{
-				sw.WriteLine(includeItem);
+				case Paths.Include:
+					settingsObj.RemoveInclude(path);
+					updateListbox(lb, settingsObj.IncludeList);
+					break;
+				case Paths.Exclude:
+					settingsObj.RemoveExclude(path);
+					updateListbox(lb, settingsObj.ExcludeList);
+					break;
+				case Paths.Destinations:
+					settingsObj.RemoveDestination(path);
+					updateListbox(lb, settingsObj.DestinationList);
+					break;
+				default:
+					break;
 			}
-			
-			sw.WriteLine("Exclude " + excludeList.Count);
-			foreach (var excludeItem in excludeList)
-			{
-				sw.WriteLine(excludeItem);
-			}			
-			sw.Close();
-		}
-
-		private void save_Click(object sender, EventArgs e)
-		{
-			createPathsFile();
 		}
 
 		private void add_Click(object sender, EventArgs e)
 		{
+			// Opens a dialog window for the user to be able to choose folders, the selected folders path is saved in path and added to the correct set of data.
 			var dialog = new System.Windows.Forms.FolderBrowserDialog();
 			System.Windows.Forms.DialogResult res = dialog.ShowDialog();
 			string path = dialog.SelectedPath;
 
-			bool includeOrExclude = treeView.SelectedItem.ToString() == "Include" ? true : false;
-			if (includeOrExclude)
+			// Depending on what item is active in the treeview we update the listbox to use different sets of data.
+			Paths p = (Paths)treeView.SelectedItem;
+			switch (p)
 			{
-				includeList.Add(path);
-				lb.ItemsSource = includeList;
-			}
-			else
-			{
-				excludeList.Add(path);
-				lb.ItemsSource = excludeList;
-			}
-			createPathsFile();
-			showPaths(includeOrExclude ? "Include" : "Exclude");			
-		}
-
-		private void showIncludePaths()
-		{
-			StreamReader sr = new StreamReader("paths.txt");
-
-			if (sr.EndOfStream)
-			{
-				return;
-			}
-			string str = sr.ReadLine();
-			while (str != "Exclude" || !sr.EndOfStream)
-			{
-				includeList.Add(str);
-				if (!sr.EndOfStream)
-				{
-					str = sr.ReadLine();
-				}
-				else
-				{
+				case Paths.Include:					
+					settingsObj.AddInclude(path);					
+					updateListbox(lb, settingsObj.IncludeList);
 					break;
-				}
-			}
-			sr.Close();
-			lb.ItemsSource = includeList;
-		}		
-
-		private void showPaths(string includeOrExclude)
-		{
-			if (File.Exists("paths.txt"))
-			{
-				StreamReader sr = new StreamReader("paths.txt");
-
-				if (includeOrExclude == "Include")
-				{
-					includeList = new List<string>();
-					if (sr.EndOfStream)
-					{
-						return;
-					}
-					string str = sr.ReadLine();
-					while (!str.Contains("Exclude") || !sr.EndOfStream)
-					{
-						if (str.Contains("Include"))
-						{
-							str = sr.ReadLine();
-							if (str.Contains("Exclude"))
-							{
-								break;
-							}
-							includeList.Add(str);
-						}
-						if (!sr.EndOfStream)
-						{
-							if (str.Contains("Exclude"))
-							{
-								break;
-							}
-							str = sr.ReadLine();							
-						}
-						else
-						{
-							break;
-						}
-					}
-					sr.Close();
-					lb.ItemsSource = includeList;
-				}
-				else
-				{
-					excludeList = new List<string>();
-					if (sr.EndOfStream)
-					{
-						return;
-					}
-					string[] s = sr.ReadLine().Split(' ');
-					for (int i = 0; i < Convert.ToInt32(s[1]); i++)
-					{
-						sr.ReadLine();
-						continue;
-					}
-					s = sr.ReadLine().Split(' ');
-					for (int i = 0; i < Convert.ToInt32(s[1]); i++)
-					{
-						string st = sr.ReadLine();
-						excludeList.Add(st);
-					}
-					lb.ItemsSource = excludeList;
-					sr.Close();
-				}
-			}
-			else
-			{
-				createPathsFile();
-			}
+				case Paths.Exclude:
+					settingsObj.AddExclude(path);					
+					updateListbox(lb, settingsObj.ExcludeList);
+					break;
+				case Paths.Destinations:
+					settingsObj.AddDestination(path);
+					updateListbox(lb, settingsObj.DestinationList);
+					break;
+				default:
+					break;
+			}				
 		}
 
 		private void treeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			if(treeView.SelectedItem.ToString() == Paths.Include.ToString())
+			if (treeView.SelectedItem.ToString() == Paths.Include.ToString())
 			{
 				addPathsControls();
-				//showIncludePaths();
-				showPaths(Paths.Include.ToString());
+				updateListbox(lb, settingsObj.IncludeList);
 			}
-			else if(treeView.SelectedItem.ToString() == Paths.Exclude.ToString())
+			else if (treeView.SelectedItem.ToString() == Paths.Exclude.ToString())
 			{
 				addPathsControls();
-				showPaths(Paths.Exclude.ToString());
+				updateListbox(lb, settingsObj.ExcludeList);
 			}
+			else if(treeView.SelectedItem.ToString() == Paths.Destinations.ToString())
+			{
+				addPathsControls();
+				updateListbox(lb, settingsObj.DestinationList);
+			}
+		}			
+		
+		private void updateListbox(ListBox lb, HashSet<string> data)
+		{
+			lb.ItemsSource = null;
+			lb.ItemsSource = data;
 		}
 	}
 }

@@ -18,8 +18,8 @@
                 </MenuItem>
             </Menu>
         </DockPanel>
-        <Button x:Name="refreshButton" Content="Refresh" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10" Click="refreshButton_Click"/>
-        <Button x:Name="button" Content="Button" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="426,0,0,10" Click="button_Click"/>
+        <Button x:Name="refreshButton" Content="Refresh" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10" Click="refreshButton_Click" ToolTipOpening="refreshButton_ToolTipOpening" ToolTip=""/>
+        <Button x:Name="button" Content="Button" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="426,0,0,10" Click="button_Click" ToolTipOpening="button_ToolTipOpening" ToolTip=""/>
         <ListBox x:Name="listBox" HorizontalAlignment="Left" Height="300" Margin="10,27,0,0" VerticalAlignment="Top" Width="256"/>
         <ListBox x:Name="listBox1" HorizontalAlignment="Right" Height="300" VerticalAlignment="Top" Width="256" Margin="0,27,10,0"/>
     </Grid>

@@ -1,6 +1,5 @@
 Include 1
 F:\Downloads
-Exclude 3
+Exclude 2
 F:\Downloads\Filmer
 F:\Downloads\Games
-F:\Downloads\Serier
