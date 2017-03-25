@@ -75,6 +75,12 @@ namespace MoveAndRename
 			lb.ItemsSource = data;
 		}
 
+		private void updateListbox(ListBox lb, List<string> data)
+		{
+			lb.ItemsSource = null;
+			listBox.ItemsSource = data;
+		}
+
 		private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
 			listBox.Height = this.Height - 100;
@@ -126,13 +132,14 @@ namespace MoveAndRename
 				
 			}
             return newDirectories;
-		}
+		}        
 
-        private void updateList(List<string> strList)
-        {
-            listBox.ItemsSource = strList;
-        }
-
+		/// <summary>
+		/// Converts a list of strings representing serieses to a list of series objects.
+		/// See createSeries(string str) for implementation of one string to series object.
+		/// </summary>
+		/// <param name="stringList"></param>
+		/// <returns></returns>
 		private List<Series> convertStringToSeries(List<String> stringList)
 		{
 			List<Series> res = new List<Series>();
@@ -146,10 +153,23 @@ namespace MoveAndRename
 					res.Add(s);
 				}
 			}
-
 			return res;
 		}
 
+
+		/*
+		*
+		* TODO: Might need to change createSeries so that it regex matches the S??E?? and takes everything infront and use as name, 
+		* might be faster than what is currently being done. What is currently being done might cause a problem if the series name actually contains a dot.
+		*
+		*/
+
+		/// <summary>
+		/// Converts a string representing a series to a series object.
+		/// Example of a string is "SeriesName.S03E02"
+		/// </summary>
+		/// <param name="str"></param>
+		/// <returns></returns>
 		private Series createSeries(string str)
 		{
 			Series ser;
@@ -193,7 +213,7 @@ namespace MoveAndRename
 		}
 
 		/// <summary>
-		/// Takes in a Series object and returns possible matches
+		/// Takes in a Series object and returns possible matches from TheTVDB.
 		/// </summary>
 		/// <param name="series">
 		/// A Series object to look for in the tvdb
@@ -221,31 +241,17 @@ namespace MoveAndRename
 			return hs;
 		}
 
+		/// <summary>
+		/// Small object which is used when matching a series name with a directory.
+		/// </summary>
 		struct DestObj {
 			public int count;
 			public string str;
 		}
-
-		class DestObjComp : IEqualityComparer<DestObj>
-		{
-			public bool Equals(DestObj a, DestObj b)
-			{
-				if (a.str.ToLower() == b.str.ToLower())
-				{
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
-			public int GetHashCode(DestObj s)
-			{
-				return s.str.ToLower().GetHashCode();
-			}
-		}
+		
 		/// <summary>
-		/// 
+		/// Goes through all the destinationlist subdirectories and checks if any of them match the series name, and returns the one with the best match.
+		/// Where the best match is the one that contains the most amount of substrings from the series name.
 		/// </summary>
 		/// <param name="ser"></param>
 		private void getDestinationPath(Series ser)
@@ -293,6 +299,9 @@ namespace MoveAndRename
 			Console.WriteLine("_________________________");
 		}
 
+		/// <summary>
+		/// Comparer class for DestObj
+		/// </summary>
 		private class DestObjComparer : IComparer<DestObj>
 		{
 			public int Compare(DestObj a, DestObj b)
