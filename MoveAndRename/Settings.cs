@@ -13,6 +13,8 @@ namespace MoveAndRename
 		private HashSet<string> includeList;
 		private HashSet<string> excludeList;
 		private HashSet<string> destinationList;
+		private bool includeNfo = false;
+		private HashSet<string> subtitleTypes;
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
@@ -25,11 +27,23 @@ namespace MoveAndRename
 
 		private void OnPropertyChanged(string property)
 		{
-			Console.WriteLine("Property changed!");
 			if(PropertyChanged != null)
 			{
 				PropertyChanged(this, new PropertyChangedEventArgs(property));
 			}
+		}
+
+		public void writeFiletypesToXml(string filename)
+		{
+			Console.WriteLine("Writing filetype settings to XML");
+			XDocument doc = XDocument.Load("settings.xml");
+			XElement ftypes = new XElement("Filetypes");
+			XElement incNFO = new XElement("IncNFO");
+			ftypes.Add(incNFO);
+			incNFO.SetAttributeValue("include", true.ToString());
+			XElement settings = doc.Element("Settings");
+			settings.Add(ftypes);
+			doc.Save(filename);
 		}
 
 		public void writeSettingsToXml(string filename)
@@ -106,6 +120,7 @@ namespace MoveAndRename
 		{
 			if (!includeList.Contains(str))
 			{
+				Console.WriteLine("Includelist property changed!");
 				includeList.Add(str);
 				OnPropertyChanged("settings");
 			}
@@ -115,6 +130,7 @@ namespace MoveAndRename
 		{
 			if (!excludeList.Contains(str))
 			{
+				Console.WriteLine("Excludelist property changed!");
 				excludeList.Add(str);
 				OnPropertyChanged("settings");
 			}
@@ -124,6 +140,7 @@ namespace MoveAndRename
 		{
 			if (!destinationList.Contains(str))
 			{
+				Console.WriteLine("Destinationlist property changed!");
 				destinationList.Add(str);
 				OnPropertyChanged("settings");
 			}
@@ -177,6 +194,14 @@ namespace MoveAndRename
 			get
 			{
 				return destinationList;
+			}
+		}
+
+		public bool IncludeNfo
+		{
+			get
+			{
+				return includeNfo;
 			}
 		}
 	}

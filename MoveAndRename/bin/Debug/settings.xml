@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Settings>
+  <Paths>
+    <Include count="1">
+      <Path value="D:\Development\MoveAndRenameTestFolder" />
+    </Include>
+    <Exclude count="1">
+      <Path value="D:\Development\MoveAndRenameTestFolder\Destination" />
+    </Exclude>
+    <Destinations count="1">
+      <Path value="D:\Development\MoveAndRenameTestFolder\Destination" />
+    </Destinations>
+  </Paths>
+</Settings>

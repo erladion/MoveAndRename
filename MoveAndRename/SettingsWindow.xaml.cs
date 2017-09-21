@@ -20,13 +20,32 @@ namespace MoveAndRename
 {
 	enum ESettings
 	{
-		Paths
+		Paths,
+		Filetypes
 	}
 	enum Paths
 	{
 		Exclude,
 		Include,
 		Destinations
+	}
+	enum FileTypes
+	{
+		Episode,
+		Subtitle
+	}
+
+	enum VideoExtensions
+	{
+		mkv,
+		mp4,
+		avi
+	}
+
+	enum SubtitleExtensions
+	{
+		sub,
+		srt
 	}
 	/// <summary>
 	/// Interaction logic for SettingsWindow.xaml
@@ -56,7 +75,20 @@ namespace MoveAndRename
 			tvi.ItemsSource = p;
 			treeView.Items.Add(tvi);
 
-			settingsObj = settingsObject;		
+			TreeViewItem tvft = new TreeViewItem();
+			tvft.Header = ESettings.Filetypes;
+			List<FileTypes> ft = new List<FileTypes>();
+			foreach (FileTypes item in Enum.GetValues(typeof(FileTypes)))
+			{
+				ft.Add(item);
+			}
+			tvft.ItemsSource = ft;
+			treeView.Items.Add(tvft);
+
+
+			settingsObj = settingsObject;
+			this.MinHeight = 400;
+			this.MinWidth = 450;	
 		}	
 
 		private void Grid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -68,21 +100,19 @@ namespace MoveAndRename
 			treeView.Width = settingsWidth * 0.3;
 			treeView.Height = settingsHeight - 60;
 			lb.Width = settingsWidth * 0.55;
-		}		
-		
+			lb.Height = settingsHeight * 0.63;
+		}
+
 		private void addPathsControls()
 		{
-			if(Content.Children.Count > 0)
-			{
-				Content.Children.RemoveAt(0);
-			}
+			Content.Children.Clear();
 
 			lb = new ListBox();
 			lb.Height = settingsHeight - 150;
 			lb.Width = settingsWidth * 0.55;
 			lb.VerticalAlignment = VerticalAlignment.Top;
 			lb.HorizontalAlignment = HorizontalAlignment.Right;
-			Content.Children.Insert(0, lb);
+			Content.Children.Add(lb);
 
 			Button add = new Button();
 			add.Content = "Add";
@@ -90,7 +120,7 @@ namespace MoveAndRename
 			add.Width = 75;
 			add.HorizontalAlignment = HorizontalAlignment.Left;
 			add.VerticalAlignment = VerticalAlignment.Bottom;
-			add.Margin = new Thickness(0, 0, 0, 5);
+			add.Margin = new Thickness(0, 0, 0, 0);
 
 			add.Click += new RoutedEventHandler(add_Click);
 			Content.Children.Add(add);
@@ -101,16 +131,54 @@ namespace MoveAndRename
 			remove.Width = 75;
 			remove.VerticalAlignment = VerticalAlignment.Bottom;
 			remove.HorizontalAlignment = HorizontalAlignment.Left;
-			remove.Margin = new Thickness(add.Width+5, 0, 0, 5);			
+			remove.Margin = new Thickness(add.Width+5, 0, 0, 0);			
 
 			remove.Click += new RoutedEventHandler(remove_Click);
 			Content.Children.Add(remove);			
-		}		
+		}
+
+		private void addFileTypesControls()
+		{
+			Content.Children.Clear();
+			Content.VerticalAlignment = VerticalAlignment.Top;
+			TextBlock tb = new TextBlock();
+			tb.Measure(new Size());
+			tb.Arrange(new Rect());
+			tb.Text = "Check this to include Subtitles in the search space";
+			tb.TextWrapping = TextWrapping.WrapWithOverflow;
+			Content.Children.Add(tb);
+
+			CheckBox cb = new CheckBox();
+			double tbH = tb.ActualHeight;
+			cb.Margin = new Thickness(0, tbH + 20, 0, 0);
+			cb.HorizontalAlignment = HorizontalAlignment.Left;
+			cb.Unchecked += Cb_Unchecked;
+			cb.Checked += Cb_Checked;
+			Content.Children.Add(cb);
+		}
+
+		private void Cb_Unchecked(object sender, RoutedEventArgs e)
+		{
+			Console.WriteLine("Uncked checkbox for episode");
+		}
+
+		private void Cb_Checked(object sender, RoutedEventArgs e)
+		{
+			Console.WriteLine("Checked checkbox for episode");
+		}
 
 		private void remove_Click(object sender, EventArgs e)
 		{
 			Paths p = (Paths)treeView.SelectedItem;
-			string path = lb.SelectedItem.ToString();
+			string path = "";
+			try
+			{
+				path = lb.SelectedItem.ToString();
+			}
+			catch (Exception)
+			{
+				path = "";
+			}
 
 			switch (p)
 			{
@@ -175,6 +243,10 @@ namespace MoveAndRename
 			{
 				addPathsControls();
 				updateListbox(lb, settingsObj.DestinationList);
+			}
+			else if(treeView.SelectedItem.ToString() == FileTypes.Episode.ToString())
+			{
+				addFileTypesControls();
 			}
 		}			
 		

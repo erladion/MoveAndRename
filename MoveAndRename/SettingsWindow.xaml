@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="SettingsWindow" Height="400" Width="450">
     <Grid Name="ControlsGrid" SizeChanged="Grid_SizeChanged">
-        <Grid Name="Content" HorizontalAlignment="Right" Margin="0,15,15,0" VerticalAlignment="Top" Width="240"/>
+        <Grid Name="Content" HorizontalAlignment="Right" Margin="0,15,10,0" VerticalAlignment="Top" Width="240" Height="345" RenderTransformOrigin="0.5,0.5"/>
         <TreeView x:Name="treeView" HorizontalAlignment="Left" Height="100" Margin="15,15,0,0" VerticalAlignment="Top" Width="120" SelectedItemChanged="treeView_SelectedItemChanged"/>
 
     </Grid>
