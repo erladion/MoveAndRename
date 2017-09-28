@@ -14,6 +14,7 @@ namespace MoveAndRename
 		private HashSet<string> excludeList;
 		private HashSet<string> destinationList;
 		private bool includeNfo = false;
+		private bool includeSubtitle = false;
 		private HashSet<string> subtitleTypes;
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -173,6 +174,32 @@ namespace MoveAndRename
 			}
 		}
 
+		public void ChangeIncludeNfo()
+		{
+			if (includeNfo)
+			{
+				includeNfo = false;
+			}
+			else
+			{
+				includeNfo = true;
+			}
+			OnPropertyChanged("settings");
+		}
+
+		public void ChangeIncludeSub()
+		{
+			if (includeSubtitle)
+			{
+				includeSubtitle = false;
+			}
+			else
+			{
+				includeSubtitle = true;
+			}
+			OnPropertyChanged("settings");
+		}
+
 		public HashSet<string> IncludeList
 		{
 			get
@@ -202,6 +229,14 @@ namespace MoveAndRename
 			get
 			{
 				return includeNfo;
+			}
+		}
+
+		public bool IncludeSubtitle
+		{
+			get
+			{
+				return includeSubtitle;
 			}
 		}
 	}

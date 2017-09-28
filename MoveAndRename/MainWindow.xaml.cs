@@ -17,14 +17,15 @@ using TVDBSharp;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace MoveAndRename
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
-    {
+	/// <summary>
+	/// Interaction logic for MainWindow.xaml
+	/// </summary>
+	public partial class MainWindow : Window
+	{
 		public bool debug = true;
 		SettingsWindow settings;
 		public HashSet<string> excludeList = new HashSet<string>();
@@ -34,20 +35,49 @@ namespace MoveAndRename
 		private string settingsFilePath = "settings.xml";
 		TVDB tvdb = new TVDB("0B4DFD2EB324D53C");
 		private List<HashSet<Series>> seriesMatchesSet = new List<HashSet<Series>>();
+		private Tuple<List<string>, List<string>> newSeriesFF;
 
 		public MainWindow()
-        {
+		{
+			// If debug is set to true, we first allocate a console,
+			// then we create a listener for Debug.WriteLine so that our debug messages gets printed in the console.
 			if (debug)
 			{
 				AllocConsole();
+				TextWriterTraceListener writer = new TextWriterTraceListener(System.Console.Out);
+				Debug.Listeners.Add(writer);
 			}
 			InitializeComponent();
+
 			refreshButton.VerticalAlignment = VerticalAlignment.Bottom;
 			listBox.Height = this.Height - 100;
 			setObj.readSettingsFromXml(settingsFilePath);
 
 			setObj.PropertyChanged += settingsChanged;
-        }
+
+			string[] cmdLine = Environment.GetCommandLineArgs();
+			if (cmdLine.Length > 0)
+			{
+				foreach (var item in cmdLine)
+				{
+					Debug.WriteLine(item);
+					if (item == "-r")
+					{
+						Debug.WriteLine("We are here");
+						// Implement here so that a search is done whenever the argument -r is passed via cmd
+						// Can be used with programs that can run other programs whenever a task is finished
+						showNewSeriesMatches();
+						moveSeriesMatches();
+						updateListbox(listBox1, new List<string>());
+						updateListbox(listBox, new List<string>());
+					}
+					else
+					{
+						continue;
+					}
+				}
+			}
+		}
 
 		private void setTooltips()
 		{
@@ -93,14 +123,14 @@ namespace MoveAndRename
 
 		private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
-			if(this.Height - 100 < 0)
+			if (this.Height - 100 < 0)
 			{
 				listBox.Height = 0;
 			}
 			else
 			{
 				listBox.Height = this.Height - 100;
-			}			
+			}
 			listBox.Width = this.Width / 2 - 25;
 			if (this.Height - 100 < 0)
 			{
@@ -118,7 +148,7 @@ namespace MoveAndRename
 		}
 
 		private void Settings_Click(object sender, RoutedEventArgs e)
-        {
+		{
 			setObj.readSettingsFromXml(settingsFilePath);
 			settings = new SettingsWindow(setObj);
 			settings.Show();
@@ -142,44 +172,43 @@ namespace MoveAndRename
 
 		private void refreshButton_Click(object sender, RoutedEventArgs e)
 		{
-			List<string> test = getNewSeries();
+			newSeriesFF = getNewSeries();
+			List<string> test = newSeriesFF.Item1;
 			test = cutPath(test);
 			updateListbox(listBox, test);
 		}
 
 		private List<string> getFilesInDir(string dirPath)
 		{
-			Console.WriteLine(dirPath);
+			Debug.WriteLine("-----Currently in getFilesInDir-----");
+			Debug.WriteLine(dirPath);
 			string[] files = { };
-			/*
-			foreach (var inc in setObj.IncludeList)
+
+			if (Directory.Exists(dirPath))
 			{
-				files = Directory.GetFiles(inc + "\\"+ dirPath);
+				files = Directory.GetFiles(dirPath);
 			}
-			*/
-			files = Directory.GetFiles(dirPath);
 			List<string> fs = new List<string>();
-			fs.AddRange(files.ToList<string>());
-			//string[] files = Directory.GetFiles(dirPath);
-			Console.WriteLine(files.Length);
-			
-			if(files.Length != 0)
+			fs.AddRange(files);
+			Debug.WriteLine(files.Length);
+
+			if (files.Length != 0)
 			{
 				List<string> foundFiles = new List<string>();
 				for (int i = 0; i < files.Length; i++)
 				{
 					foreach (var item in Enum.GetValues(typeof(VideoExtensions)))
 					{
-						Console.WriteLine("Current item: " + item);
-						Console.WriteLine(System.IO.Path.GetExtension(files[i]));
+						Debug.WriteLine("Current item: " + item);
+						Debug.WriteLine(System.IO.Path.GetExtension(files[i]));
 						if (System.IO.Path.GetExtension(files[i]) == "." + item.ToString())
 						{
-							Console.WriteLine("Add file based on PATH");
+							Debug.WriteLine("Add file based on PATH");
 							foundFiles.Add(files[i]);
 						}
 						if (setObj.IncludeNfo)
 						{
-							Console.WriteLine("Include nfo: true");
+							Debug.WriteLine("Include nfo: true");
 							if (files[i].EndsWith(".nfo"))
 							{
 								foundFiles.Add(files[i]);
@@ -187,25 +216,34 @@ namespace MoveAndRename
 						}
 					}
 				}
-				Console.WriteLine("Found files size: " + foundFiles.Count);
+				Debug.WriteLine("Found files size: " + foundFiles.Count);
 				return foundFiles;
 			}
 			return new List<string>();
-			
+
 		}
 
-		private List<string> getNewSeries()
+		private Tuple<List<string>, List<string>> getNewSeries()
 		{
+			Debug.WriteLine("-----Currently in getNewSeries-----");
 			//List<string> res = new List<string>();
 			HashSet<string> includeList = setObj.IncludeList;
 
 			List<string> newDirectories = new List<string>();
+			List<string> newFiles = new List<string>();
 			HashSet<string> excludeList = setObj.ExcludeList;
 
 			foreach (var item in includeList)
 			{
 				try
 				{
+					string[] t = Directory.GetFiles(item);
+					newFiles.AddRange(t);
+					Debug.WriteLine("Writing found files");
+					foreach (var i in newFiles)
+					{
+						Debug.WriteLine(i);
+					}
 					var directories = Directory.GetDirectories(item);
 					for (int j = 0; j < directories.Length; j++)
 					{
@@ -221,7 +259,7 @@ namespace MoveAndRename
 					continue;
 				}
 			}
-            return newDirectories;
+			return Tuple.Create(newDirectories, newFiles);
 		}
 
 		/// <summary>
@@ -232,13 +270,14 @@ namespace MoveAndRename
 		/// <returns></returns>
 		private List<Series> convertStringToSeries(List<String> stringList)
 		{
+			Debug.WriteLine("-----Currently in convertStringToSeries-----");
 			List<Series> res = new List<Series>();
 
 			foreach (var str in stringList)
 			{
 				Series s = createSeries(str);
 				// If we get a series with name "" it means something went wrong in the parsing and we don't include that
-				if(s.Name != "")
+				if (s.Name != "")
 				{
 					res.Add(s);
 				}
@@ -246,6 +285,47 @@ namespace MoveAndRename
 			return res;
 		}
 
+		private List<Series> convertFolderToSeries(List<String> stringList)
+		{
+			List<Series> res = new List<Series>();
+
+			return res;
+		}
+
+		private List<Series> convertFileToSeries(List<String> stringList)
+		{
+			List<Series> res = new List<Series>();
+			foreach (var item in stringList)
+			{
+				res.Add(createSeriesFromFile(item));
+			}
+			return res; 
+		}
+
+		private Series createSeriesFromFile(string s)
+		{
+			string path = s.Substring(0, s.Length - 4);
+			string ext = s.Substring(s.Length - 3, 3);
+			string[] splitStr = s.Split('\\');
+			string[] splitN = splitStr[splitStr.Length-1].Split('.');
+			string name = "";
+			string season = "";
+			string episode = "";
+			for (int i = 0; i < splitN.Length-1; i++)
+			{
+				Match m = Regex.Match(splitN[i], @"S([0-9]+)E([0-9]+)$", RegexOptions.IgnoreCase);
+				if (m.Success)
+				{
+					string[] u = splitN[i].ToLower().Split('e');
+					season = u[0].TrimStart('s');
+					episode = u[1];
+					break;
+				}
+				name += splitN[i] + " ";
+			}
+			name.TrimEnd(' ');
+			return new Series(name, Convert.ToInt32(season), Convert.ToInt32(episode), "", path, ext);
+		}
 
 		/*
 		*
@@ -262,13 +342,14 @@ namespace MoveAndRename
 		/// <returns></returns>
 		private Series createSeries(string str)
 		{
-			Console.WriteLine("Input string: " + str);
+			Debug.WriteLine("-----Currently in createSeries-----");
+			Debug.WriteLine("Input string: " + str);
 			Series ser;
 			//string[] s = str.Split('.');
 			string[] s = str.Split('\\');
 			string[] fileN = s[s.Length - 1].Split('.');
 			string pName = "";
-			for (int i = 0; i < fileN.Length-1; i++)
+			for (int i = 0; i < fileN.Length - 1; i++)
 			{
 				pName += fileN[i];
 			}
@@ -284,7 +365,7 @@ namespace MoveAndRename
 			{
 				// If we get a regex match it means we got the name
 				Match m = Regex.Match(s2[i], @"S([0-9]+)E([0-9]+)$", RegexOptions.IgnoreCase);
-				Console.WriteLine("Name so far: " + name);
+				Debug.WriteLine("Name so far: " + name);
 
 				if (m.Success)
 				{
@@ -292,12 +373,12 @@ namespace MoveAndRename
 				}
 				if (gotName)
 				{
-					Console.WriteLine("Got the name, printing rest: " + s2[i]);
+					Debug.WriteLine("Got the name, printing rest: " + s2[i]);
 					string[] t = s2[i].ToLower().Split('e');
 					season = Convert.ToInt32(t[0].TrimStart('s'));
 					episode = Convert.ToInt32(t[1]);
-					Console.WriteLine("Season: " + t[0]);
-					Console.WriteLine("Episode: " + t[1]);
+					Debug.WriteLine("Season: " + season);
+					Debug.WriteLine("Episode: " + episode);
 					break;
 				}
 				else
@@ -306,15 +387,17 @@ namespace MoveAndRename
 				}
 			}
 			name.TrimEnd(' ');
-			if(season == 0 || episode == 0)
+			if (season == 0 || episode == 0)
 			{
 				return new Series();
 			}
 			else
 			{
 				string path = str;
-				ser = new Series(name, season, episode,"", path, extension);
-				ser.printSeries();
+				Debug.WriteLine("Season: " + season);
+				Debug.WriteLine("Episode: " + episode);
+				ser = new Series(name, season, episode, "", path, extension);
+				//ser.printSeries();
 			}
 			return ser;
 		}
@@ -327,6 +410,7 @@ namespace MoveAndRename
 		/// </param>
 		private HashSet<Series> findMatch(TVDB obj, Series series)
 		{
+			Debug.WriteLine("-----Currently in findMatch-----");
 			HashSet<Series> hs = new HashSet<Series>(new SeriesComparer());
 
 			var results = obj.Search(series.Name);
@@ -335,9 +419,9 @@ namespace MoveAndRename
 			{
 				foreach (var episode in ser.Episodes)
 				{
-					if(episode.EpisodeNumber == series.Episode && episode.SeasonNumber == series.Season)
+					if (episode.EpisodeNumber == series.Episode && episode.SeasonNumber == series.Season)
 					{
-						Series s = new Series(ser.Name, episode.EpisodeNumber, episode.SeasonNumber, episode.Title, series.CurrentPath, series.Extension);
+						Series s = new Series(ser.Name, episode.SeasonNumber, episode.EpisodeNumber, episode.Title, series.CurrentPath, series.Extension);
 						if (!hs.Contains(s))
 						{
 							hs.Add(s);
@@ -348,7 +432,7 @@ namespace MoveAndRename
 
 			foreach (var item in hs)
 			{
-				Console.WriteLine(item.Name);
+				Debug.WriteLine(item.Name);
 			}
 			return hs;
 		}
@@ -364,7 +448,8 @@ namespace MoveAndRename
 		/// <summary>
 		/// Small object which is used when matching a series name with a directory.
 		/// </summary>
-		struct DestObj {
+		struct DestObj
+		{
 			public int count;
 			public string str;
 			public string path;
@@ -379,7 +464,7 @@ namespace MoveAndRename
 		{
 			List<string> possibleDirectories = new List<string>();
 			List<DestObj> de = new List<DestObj>();
-			Console.WriteLine(setObj.DestinationList.Count);
+			Debug.WriteLine(setObj.DestinationList.Count);
 			foreach (var item in setObj.DestinationList)
 			{
 				string[] subDirectories = Directory.GetDirectories(item);
@@ -393,15 +478,16 @@ namespace MoveAndRename
 					deo.str = "";
 					for (int j = 0; j < splitSer.Length; j++)
 					{
-						Console.WriteLine("---");
-						Console.WriteLine("Currently checking if: " + subdirname.Last().ToLower() + " contains " + splitSer[j].ToLower());
-						if (subdirname.Last().ToLower().Contains(splitSer[j].ToLower())) {
-							Console.WriteLine("Yes it did");
+						Debug.WriteLine("---");
+						Debug.WriteLine("Currently checking if: " + subdirname.Last().ToLower() + " contains " + splitSer[j].ToLower());
+						if (subdirname.Last().ToLower().Contains(splitSer[j].ToLower()))
+						{
+							Debug.WriteLine("Yes it did");
 							deo.count++;
 							deo.str += splitSer[j] + " ";
 							deo.path = subDirectories[i].ToString();
 						}
-						Console.WriteLine("---");
+						Debug.WriteLine("---");
 					}
 					if (!de.Contains(deo))
 					{
@@ -411,16 +497,20 @@ namespace MoveAndRename
 			}
 
 			de.Sort(new DestObjComparer());
-			Console.WriteLine("Searched for: " + ser.Name);
-			Console.WriteLine("Best match: " + de[0].str);
-			Console.WriteLine("_________________________");
+			Debug.WriteLine("Searched for: " + ser.Name);
+			Debug.WriteLine("Best match: " + de[0].str);
+			Debug.WriteLine("_________________________");
 			foreach (var item in de)
 			{
-				Console.WriteLine("Matches: " + item.count.ToString() + " str " + item.str);
+				Debug.WriteLine("Matches: " + item.count.ToString() + " str " + item.str);
 			}
-			Console.WriteLine("_________________________");
+			Debug.WriteLine("_________________________");
 
-			Console.WriteLine("Returning: " + de[0].str + " Path: " + de[0].path);
+			Debug.WriteLine("Returning: " + de[0].str + " Path: " + de[0].path);
+			if(de[0].path == null)
+			{
+				return "";
+			}
 			return de[0].path;
 		}
 
@@ -431,11 +521,11 @@ namespace MoveAndRename
 		{
 			public int Compare(DestObj a, DestObj b)
 			{
-				if(a.count < b.count)
+				if (a.count < b.count)
 				{
 					return 1;
 				}
-				else if(a.count > b.count)
+				else if (a.count > b.count)
 				{
 					return -1;
 				}
@@ -446,7 +536,7 @@ namespace MoveAndRename
 			}
 		}
 
-		private void moveFile(string from, string to)
+		private bool moveFile(string from, string to)
 		{
 			bool fromOk = false;
 			foreach (var item in setObj.IncludeList)
@@ -466,10 +556,21 @@ namespace MoveAndRename
 					break;
 				}
 			}
-			if(fromOk && toOk)
+			if (fromOk && toOk)
 			{
-				File.Move(from, to);
+				DirectoryInfo f = new FileInfo(to).Directory;
+				if (Directory.Exists(f.FullName)){
+					File.Move(from, to);
+				}
+				else
+				{
+					new FileInfo(to).Directory.Create();
+					File.Move(from, to);					
+				}
+				return true;
+
 			}
+			return false;
 		}
 
 		/// <summary>
@@ -502,9 +603,9 @@ namespace MoveAndRename
 
 			foreach (var sub in l)
 			{
-				Console.WriteLine("Current string: " + sub);
+				Debug.WriteLine("Current string: " + sub);
 				Match m = Regex.Match(sub, @"eng", RegexOptions.IgnoreCase);
-				Console.WriteLine("Current match: " + m.Value);
+				Debug.WriteLine("Current match: " + m.Value);
 				if (m.Success)
 				{
 					path = sub;
@@ -512,10 +613,10 @@ namespace MoveAndRename
 				}
 				else
 				{
-					if(l.Count > 0)
+					if (l.Count > 0)
 					{
 						path = l[0];
-					}					
+					}
 				}
 			}
 
@@ -527,27 +628,79 @@ namespace MoveAndRename
 		/// </summary>
 		/// <param name="path">Destination path</param>
 		/// <param name="ser">Series object for the file to be moved</param>
-        private void moveFile(HashSet<Series> serSet) {
+		private void moveFile(HashSet<Series> serSet)
+		{
 			foreach (var ser in serSet)
 			{
 				string destinationPath = getDestinationPath(ser);
+				if(destinationPath.Length == 0)
+				{
+					// We got no current folder for the series, so we create one.
+					// TODO: Write code to create the correct folder
+					if(setObj.DestinationList.Count > 1)
+					{
+						ChoiceWindow cw = new ChoiceWindow(setObj.DestinationList);
+						cw.ShowDialog();
+						destinationPath = cw.choice;
+					}
+					else
+					{
+						destinationPath = setObj.DestinationList.First();
+					}
+					destinationPath += '\\' + ser.Name;
+				}
+				Debug.WriteLine("Current destination path: " + destinationPath);
+				destinationPath += '\\' + "Season " + ser.Season;
+				Debug.WriteLine("Current destination path: " + destinationPath);
 				ser.Name = ser.Name.Trim(' ');
 
 				string printingEpisode = (ser.Episode < 10 ? "0" + ser.Episode.ToString() : ser.Episode.ToString());
 
-				Console.WriteLine("Current path: " + ser.CurrentPath);
-				Console.WriteLine("New Path: " + destinationPath + "\\" + ser.Name + " - " + ser.Season + "x" + printingEpisode + " - " + ser.Title + "." + ser.Extension);
-				if(ser.CurrentPath != null && destinationPath+"//"+ser.Name+" - "+ser.Season+"x"+ser.Episode+" - "+ser.Title != null)
+				if (ser.Episode < 10)
 				{
-					if (ser.Episode < 10)
+					destinationPath += '\\' + ser.Name + " - " + ser.Season + "x0" + ser.Episode + " - " + ser.Title + "." + ser.Extension;
+				}
+				else
+				{
+					destinationPath += '\\' + ser.Name + " - " + ser.Season + "x" + ser.Episode + " - " + ser.Title + "." + ser.Extension;
+				}
+
+
+				Debug.WriteLine("Current path: " + ser.CurrentPath);
+				Debug.WriteLine("Destination path: " + destinationPath);
+				if (ser.CurrentPath != null && destinationPath + "//" + ser.Name + " - " + ser.Season + "x" + ser.Episode + " - " + ser.Title != null)
+				{
+					bool movedFile = false;
+					string sp = ser.CurrentPath;
+					if (ser.CurrentPath.Contains("." + ser.Extension))
 					{
-						File.Move(ser.CurrentPath, destinationPath + "//" + ser.Name + " - " + ser.Season + "x0" + ser.Episode + " - " + ser.Title + "." + ser.Extension);
+						movedFile = moveFile(ser.CurrentPath, destinationPath);
 					}
 					else
 					{
-						File.Move(ser.CurrentPath, destinationPath + "//" + ser.Name + " - " + ser.Season + "x" + ser.Episode + " - " + ser.Title + "." + ser.Extension);
+						movedFile = moveFile(ser.CurrentPath + "." + ser.Extension, destinationPath);
+					}					
+					// If the setting to include subtitles is set, we first get the subtitle which is in the appropriate language (english)
+					// then we use the path where we are sending our "series" file and we simply send the sub there as well, with the same name
+					// so it gets associated with the "series".
+					if (setObj.IncludeSubtitle)
+					{
+						List<string> subFiles = findSubFiles(System.IO.Path.GetDirectoryName(ser.CurrentPath));
+						if (subFiles.Count > 0)
+						{
+							string sub = getBestSubFile(subFiles);
+
+							string s = System.IO.Path.GetFileNameWithoutExtension(destinationPath);
+							string fileExt = System.IO.Path.GetExtension(sub);
+
+							moveFile(sub, s + "." + fileExt);
+						}
+
 					}
-					
+					if (movedFile)
+					{
+						removeFolder(sp);
+					}
 				}
 			}
 		}
@@ -562,14 +715,27 @@ namespace MoveAndRename
 				{
 					if (path.Contains(item))
 					{
-						File.Delete(path);
+						if (File.Exists(path))
+						{
+							File.SetAttributes(path, FileAttributes.Normal);
+							File.Delete(path);
+						}
+						else if (Directory.Exists(path))
+						{
+							Directory.Delete(path);
+						}												
 					}
-				}				
+				}
 			}
 			catch (Exception)
 			{
 				throw;
 			}
+		}
+
+		internal static bool FileOrDirectoryExists(string name)
+		{
+			return (Directory.Exists(name) || File.Exists(name));
 		}
 
 		private void showMatches(HashSet<Series> seriesSet)
@@ -578,7 +744,7 @@ namespace MoveAndRename
 			string episodeNumber;
 			foreach (var ser in seriesSet)
 			{
-				if(ser.Season < 10)
+				if (ser.Season < 10)
 				{
 					seasonNumber = "0" + ser.Season;
 				}
@@ -586,7 +752,7 @@ namespace MoveAndRename
 				{
 					seasonNumber = ser.Season.ToString();
 				}
-				if(ser.Episode < 10)
+				if (ser.Episode < 10)
 				{
 					episodeNumber = "0" + ser.Episode;
 				}
@@ -594,25 +760,39 @@ namespace MoveAndRename
 				{
 					episodeNumber = ser.Episode.ToString();
 				}
+				Debug.WriteLine("Showing currently printed information in right listbox");
+				Debug.WriteLine(seasonNumber);
+				Debug.WriteLine(episodeNumber);
 				listBox1.Items.Add(ser.Name + " " + "S" + seasonNumber + "E" + episodeNumber + " Name: " + ser.Title);
 			}
 		}
 
 		private void showNewSeriesMatches()
 		{
-			List<string> ls = getNewSeries();
+			//Tuple<List<string>, List<string>> t = getNewSeries();
 
+			List<string> ls = newSeriesFF.Item1;
 			List<string> filesInDir = new List<string>();
 			for (int i = 0; i < ls.Count; i++)
 			{
 				filesInDir.AddRange(getFilesInDir(ls[i]));
 			}
 
-			updateListbox(listBox1, ls);
+			ls.AddRange(newSeriesFF.Item2);
+
+			updateListbox(listBox1, cutPath(ls));
 			List<Series> s = convertStringToSeries(filesInDir);
+			List<Series> u = convertFileToSeries(newSeriesFF.Item2);
+			Debug.WriteLine(u.Count);
 
 			List<HashSet<Series>> lh = new List<HashSet<Series>>();
 			foreach (var item in s)
+			{
+				HashSet<Series> h = findMatch(tvdb, item);
+				lh.Add(h);
+			}
+
+			foreach (var item in u)
 			{
 				HashSet<Series> h = findMatch(tvdb, item);
 				lh.Add(h);
@@ -622,7 +802,7 @@ namespace MoveAndRename
 			{
 				if (set.Count > 0)
 				{
-					Console.WriteLine("Before move file");
+					Debug.WriteLine("Before move file");
 					foreach (var item in set)
 					{
 						item.printSeries();
@@ -638,7 +818,7 @@ namespace MoveAndRename
 			foreach (var item in seriesMatchesSet)
 			{
 				moveFile(item);
-			}			
+			}
 		}
 
 		private TVDB createTVDBObj()
@@ -650,61 +830,12 @@ namespace MoveAndRename
 		private void move_Click(object sender, RoutedEventArgs e)
 		{
 			moveSeriesMatches();
+			updateListbox(listBox1, new List<string>());
+			updateListbox(listBox, new List<string>());
 		}
 
 		private void button_Click(object sender, RoutedEventArgs e)
 		{
-
-			//Series ser = new Series("A hidden rock", 1, 1);
-
-			//getFilesInDir(str);
-
-
-			//TVDB t = createTVDBObj();
-			/*
-			TVDB t = tvdb;
-
-            List<string> ls = getNewSeries();
-
-			List<string> filesInDir = new List<string>();
-			for (int i = 0; i < ls.Count; i++)
-			{
-				Console.WriteLine(ls[i]);
-				filesInDir.AddRange(getFilesInDir(ls[i]));
-			}
-
-			Console.WriteLine("Printing all files found in directories");
-			Console.WriteLine(filesInDir.Count);
-			foreach (var item in filesInDir)
-			{
-				Console.WriteLine(item);
-			}
-			Console.WriteLine("_______________________________________");
-
-            updateListbox(listBox1,ls);
-            List<Series> s = convertStringToSeries(filesInDir);
-
-            List<HashSet<Series>> lh = new List<HashSet<Series>>();
-            foreach (var item in s)
-            {
-                HashSet<Series> h = findMatch(t, item);
-                lh.Add(h);
-            }
-
-            foreach (var set in lh)
-            {
-				if (set.Count > 0)
-				{
-					Console.WriteLine("Before move file");
-					foreach(var item in set)
-					{
-						item.printSeries();
-					}
-					showMatches(set);
-					moveFile(set);
-				}
-            }
-			*/
 			showNewSeriesMatches();
 		}
 
@@ -724,7 +855,7 @@ namespace MoveAndRename
 	{
 		public bool Equals(Series a, Series b)
 		{
-			if(a.Title == b.Title)
+			if (a.Title == b.Title)
 			{
 				return true;
 			}

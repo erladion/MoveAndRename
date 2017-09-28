@@ -31,3 +31,5 @@ D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.g.reso
 D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.Properties.Resources.resources
 D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.csproj.GenerateResource.Cache
 D:\Development\GitHub\MoveAndRename\MoveAndRename\bin\Debug\TVDBSharp.dll
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\ChoiceWindow.g.cs
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\ChoiceWindow.baml

@@ -16,7 +16,6 @@
                     <MenuItem Header="_Save"></MenuItem>
                     <MenuItem Name="Settings" Header="_Settings" Click="Settings_Click"></MenuItem>
                 </MenuItem>
-
             </Menu>
         </DockPanel>
         <Button x:Name="refreshButton" Content="Refresh" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10" Click="refreshButton_Click" ToolTipOpening="refreshButton_ToolTipOpening" ToolTip=""/>
