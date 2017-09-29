@@ -73,6 +73,7 @@
     <Compile Include="ChoiceWindow.xaml.cs">
       <DependentUpon>ChoiceWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="KodiControl.cs" />
     <Compile Include="Series.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SettingsWindow.xaml.cs">

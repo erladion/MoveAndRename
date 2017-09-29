@@ -37,6 +37,8 @@ namespace MoveAndRename
 		private List<HashSet<Series>> seriesMatchesSet = new List<HashSet<Series>>();
 		private Tuple<List<string>, List<string>> newSeriesFF;
 
+		//private KodiControl kc = new KodiControl("192.168.0.101", "8080");
+
 		public MainWindow()
 		{
 			// If debug is set to true, we first allocate a console,
@@ -77,6 +79,8 @@ namespace MoveAndRename
 					}
 				}
 			}
+
+			//kc.UpdateLibrary();
 		}
 
 		private void setTooltips()
@@ -672,7 +676,8 @@ namespace MoveAndRename
 				{
 					bool movedFile = false;
 					string sp = ser.CurrentPath;
-					if (ser.CurrentPath.Contains("." + ser.Extension))
+					string ext = "." + ser.Extension;
+					if (ser.CurrentPath.Contains(ext))
 					{
 						movedFile = moveFile(ser.CurrentPath, destinationPath);
 					}
@@ -699,7 +704,14 @@ namespace MoveAndRename
 					}
 					if (movedFile)
 					{
-						removeFolder(sp);
+						if(sp.Contains(ext))
+						{
+							removeFolder(System.IO.Path.GetDirectoryName(sp));
+						}
+						else
+						{
+							removeFolder(sp);
+						}						
 					}
 				}
 			}
@@ -715,15 +727,21 @@ namespace MoveAndRename
 				{
 					if (path.Contains(item))
 					{
-						if (File.Exists(path))
+						Debug.WriteLine("Currently checking: " + path);
+						Debug.WriteLine("Against: " + item);
+						Debug.WriteLine(Directory.Exists(path));
+						if (Directory.Exists(path))
+						{
+							Debug.WriteLine("Before deleting folder");
+							Directory.Delete(path);
+						}
+						// Should probably never happen, as we move the series/movie file.
+						else if(File.Exists(path))
 						{
 							File.SetAttributes(path, FileAttributes.Normal);
 							File.Delete(path);
 						}
-						else if (Directory.Exists(path))
-						{
-							Directory.Delete(path);
-						}												
+																		
 					}
 				}
 			}

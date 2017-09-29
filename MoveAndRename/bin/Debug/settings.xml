@@ -2,13 +2,14 @@
 <Settings>
   <Paths>
     <Include count="1">
-      <Path value="D:\Development\MoveAndRenameTestFolder" />
+      <Path value="F:\Downloads" />
     </Include>
-    <Exclude count="1">
-      <Path value="D:\Development\MoveAndRenameTestFolder\Destination" />
+    <Exclude count="2">
+      <Path value="F:\Downloads\Games" />
+      <Path value="F:\Downloads\Filmer" />
     </Exclude>
     <Destinations count="1">
-      <Path value="D:\Development\MoveAndRenameTestFolder\Destination" />
+      <Path value="F:\Downloads\Serier" />
     </Destinations>
   </Paths>
 </Settings>
