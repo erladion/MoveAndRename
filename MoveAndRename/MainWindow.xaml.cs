@@ -1,17 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.IO;
 using TVDBSharp;
 using System.Text.RegularExpressions;
@@ -37,7 +28,7 @@ namespace MoveAndRename
 		private List<HashSet<Series>> seriesMatchesSet = new List<HashSet<Series>>();
 		private Tuple<List<string>, List<string>> newSeriesFF;
 
-		//private KodiControl kc = new KodiControl("192.168.0.101", "8080");
+		private KodiControl kc = new KodiControl("192.168.0.101", "8080");
 
 		public MainWindow()
 		{
@@ -72,6 +63,7 @@ namespace MoveAndRename
 						moveSeriesMatches();
 						updateListbox(listBox1, new List<string>());
 						updateListbox(listBox, new List<string>());
+						updateKodiLibrary();
 					}
 					else
 					{
@@ -80,7 +72,7 @@ namespace MoveAndRename
 				}
 			}
 
-			//kc.UpdateLibrary();
+			kc.UpdateLibrary();
 		}
 
 		private void setTooltips()
@@ -540,6 +532,12 @@ namespace MoveAndRename
 			}
 		}
 
+		/// <summary>
+		/// Moves a file from "from" to "to" with some additional checks to make sure we are moving the correct file
+		/// </summary>
+		/// <param name="from"></param>
+		/// <param name="to"></param>
+		/// <returns></returns>
 		private bool moveFile(string from, string to)
 		{
 			bool fromOk = false;
@@ -700,7 +698,6 @@ namespace MoveAndRename
 
 							moveFile(sub, s + "." + fileExt);
 						}
-
 					}
 					if (movedFile)
 					{
@@ -733,7 +730,21 @@ namespace MoveAndRename
 						if (Directory.Exists(path))
 						{
 							Debug.WriteLine("Before deleting folder");
-							Directory.Delete(path);
+							
+							string[] files = Directory.GetFiles(path);
+							string[] dirs = Directory.GetDirectories(path);
+
+							foreach (var file in files)
+							{
+								File.SetAttributes(file, FileAttributes.Normal);
+								File.Delete(file);
+							}
+
+							foreach (var dir in dirs)
+							{
+								removeFolder(dir);
+							}
+							Directory.Delete(path,false);
 						}
 						// Should probably never happen, as we move the series/movie file.
 						else if(File.Exists(path))
@@ -749,11 +760,6 @@ namespace MoveAndRename
 			{
 				throw;
 			}
-		}
-
-		internal static bool FileOrDirectoryExists(string name)
-		{
-			return (Directory.Exists(name) || File.Exists(name));
 		}
 
 		private void showMatches(HashSet<Series> seriesSet)
@@ -783,6 +789,12 @@ namespace MoveAndRename
 				Debug.WriteLine(episodeNumber);
 				listBox1.Items.Add(ser.Name + " " + "S" + seasonNumber + "E" + episodeNumber + " Name: " + ser.Title);
 			}
+		}
+
+		private void updateKodiLibrary()
+		{
+			KodiControl kc = new KodiControl("192.168.0.101", "8080");
+			kc.UpdateLibrary();
 		}
 
 		private void showNewSeriesMatches()
@@ -850,6 +862,7 @@ namespace MoveAndRename
 			moveSeriesMatches();
 			updateListbox(listBox1, new List<string>());
 			updateListbox(listBox, new List<string>());
+			updateKodiLibrary();
 		}
 
 		private void button_Click(object sender, RoutedEventArgs e)

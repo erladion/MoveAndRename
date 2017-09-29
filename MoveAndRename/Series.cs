@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace MoveAndRename
 {
@@ -57,12 +53,12 @@ namespace MoveAndRename
 
 		public void printSeries()
 		{
-			Console.WriteLine("---Printing series info---");
-			Console.WriteLine(Name);
-			Console.WriteLine("Season: " + Season + " Episode: " + Episode);
-			Console.WriteLine(CurrentPath);
-			Console.WriteLine(Extension);
-			Console.WriteLine("---Done printing series info---");
+			Debug.WriteLine("---Printing series info---");
+			Debug.WriteLine(Name);
+			Debug.WriteLine("Season: " + Season + " Episode: " + Episode);
+			Debug.WriteLine(CurrentPath);
+			Debug.WriteLine(Extension);
+			Debug.WriteLine("---Done printing series info---");
 		}
 	}
 }

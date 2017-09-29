@@ -1,20 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.IO;
-using Microsoft.Win32;
-using System.Xml;
-using System.Xml.Linq;
+using System.Diagnostics;
 
 namespace MoveAndRename
 {
@@ -159,12 +147,12 @@ namespace MoveAndRename
 
 		private void Cb_Unchecked(object sender, RoutedEventArgs e)
 		{
-			Console.WriteLine("Uncked checkbox for episode");
+			Debug.WriteLine("Uncked checkbox for episode");
 		}
 
 		private void Cb_Checked(object sender, RoutedEventArgs e)
 		{
-			Console.WriteLine("Checked checkbox for episode");
+			Debug.WriteLine("Checked checkbox for episode");
 		}
 
 		private void remove_Click(object sender, EventArgs e)

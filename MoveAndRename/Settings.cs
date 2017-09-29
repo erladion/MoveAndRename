@@ -14,7 +14,7 @@ namespace MoveAndRename
 		private HashSet<string> excludeList;
 		private HashSet<string> destinationList;
 		private bool includeNfo = false;
-		private bool includeSubtitle = false;
+		private bool includeSubtitle = true;
 		private HashSet<string> subtitleTypes;
 
 		public event PropertyChangedEventHandler PropertyChanged;
