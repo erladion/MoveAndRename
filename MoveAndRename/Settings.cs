@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 
 namespace MoveAndRename
 {
@@ -95,26 +97,36 @@ namespace MoveAndRename
 
 		public void readSettingsFromXml(string filename)
 		{
-			Console.WriteLine("Reading settings from XML");
-			XDocument doc = XDocument.Load("settings.xml");
+			Debug.WriteLine("Reading settings from XML");
+            try
+            {
+                XDocument doc = XDocument.Load("settings.xml");
 
-			foreach (var path in doc.Descendants(Paths.Exclude.ToString()).Elements("Path"))
-			{
-				string str = path.Attribute("value").Value;
-				AddExclude(str);
-			}
+                foreach (var path in doc.Descendants(Paths.Exclude.ToString()).Elements("Path"))
+                {
+                    string str = path.Attribute("value").Value;
+                    AddExclude(str);
+                }
 
-			foreach (var path in doc.Descendants(Paths.Include.ToString()).Elements("Path"))
-			{
-				string str = path.Attribute("value").Value;
-				AddInclude(str);
-			}
+                foreach (var path in doc.Descendants(Paths.Include.ToString()).Elements("Path"))
+                {
+                    string str = path.Attribute("value").Value;
+                    AddInclude(str);
+                }
 
-			foreach (var path in doc.Descendants(Paths.Destinations.ToString()).Elements("Path"))
-			{
-				string str = path.Attribute("value").Value;
-				AddDestination(str);
-			}
+                foreach (var path in doc.Descendants(Paths.Destinations.ToString()).Elements("Path"))
+                {
+                    string str = path.Attribute("value").Value;
+                    AddDestination(str);
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                Debug.WriteLine("Settings file not found");
+                var f = File.Create("settings.xml");
+                f.Close();
+                writeSettingsToXml("settings.xml");
+            }			
 		}
 
 		public void AddInclude(string str)

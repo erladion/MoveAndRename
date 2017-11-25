@@ -553,9 +553,9 @@ namespace MoveAndRename
 
             }
 
-            for (int i = 0; i <= n; i++)
+            for (int i = 1; i <= n; i++)
             {
-                for (int j = 0; j <= m; j++)
+                for (int j = 1; j <= m; j++)
                 {
                     int cost = (b[j - 1] == a[i - 1]) ? 0 : 1;
 
@@ -583,11 +583,11 @@ namespace MoveAndRename
                     {
                         if (j == splLis.Length - 1)
                         {
-                            tempStr += splLis[i];
+                            tempStr += splLis[j];
                         }
                         else
                         {
-                            tempStr += splLis[i] + " ";
+                            tempStr += splLis[j] + " ";
                         }
                     }
                 }
@@ -601,6 +601,15 @@ namespace MoveAndRename
             }
 
             impList.Sort(new LevenstheinObjComparer());
+
+            foreach (var item in impList)
+            {
+                Debug.WriteLine("-------------------------------");
+                Debug.WriteLine("Current string before change: " + item.GetOriginal());
+                Debug.WriteLine("Current string after change: " + item.GetChanged());
+                Debug.WriteLine("Cost: " + item.GetCost());
+                Debug.WriteLine("-------------------------------");
+            }
 
             return impList[0].GetOriginal();
         }
@@ -674,6 +683,9 @@ namespace MoveAndRename
 			foreach (var item in setObj.DestinationList)
 			{
 				string[] subDirectories = Directory.GetDirectories(item);
+
+                // TODO CHECK THIS
+                //findBestStringMatch(subDirectories.ToList(), ser.Name);
 
 				for (int i = 0; i < subDirectories.Length; i++)
 				{
