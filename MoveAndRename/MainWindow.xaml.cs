@@ -42,6 +42,8 @@ namespace MoveAndRename
 			}
 			InitializeComponent();
 
+			Debug.WriteLine(System.Environment.GetEnvironmentVariable("TEMP"));
+
 			refreshButton.VerticalAlignment = VerticalAlignment.Bottom;
 			listBox.Height = this.Height - 100;
 			setObj.readSettingsFromXml(settingsFilePath);
@@ -54,25 +56,61 @@ namespace MoveAndRename
 				foreach (var item in cmdLine)
 				{
 					Debug.WriteLine(item);
-					if (item == "-r")
+					try
 					{
-						Debug.WriteLine("We are here");
-						// Implement here so that a search is done whenever the argument -r is passed via cmd
-						// Can be used with programs that can run other programs whenever a task is finished
-						showNewSeriesMatches();
-						moveSeriesMatches();
-						updateListbox(listBox1, new List<string>());
-						updateListbox(listBox, new List<string>());
-						updateKodiLibrary();
+						if (item == "-r")
+						{
+							Debug.WriteLine("We are here");
+							// Implement here so that a search is done whenever the argument -r is passed via cmd
+							// Can be used with programs that can run other programs whenever a task is finished
+							newSeriesFF = getNewSeries();
+							Debug.WriteLine("1");
+							showNewSeriesMatches();
+							Debug.WriteLine("2");
+							moveSeriesMatches();
+							Debug.WriteLine("3");
+							updateListbox(listBox1, new List<string>());
+							updateListbox(listBox, new List<string>());
+							updateKodiLibrary();
+							Debug.WriteLine("4");
+							Application.Current.Shutdown();
+						}
+						else
+						{
+							continue;
+						}
 					}
-					else
+					catch (Exception e)
 					{
-						continue;
-					}
+						LogMessageToFile(e.ToString());
+					}					
 				}
 			}
 
 			kc.UpdateLibrary();
+		}
+
+		public string GetTempPath()
+		{
+			string path = System.Environment.GetEnvironmentVariable("TEMP");
+			if (!path.EndsWith("\\")) path += "\\";
+			return path;
+		}
+
+		public void LogMessageToFile(string msg)
+		{
+			System.IO.StreamWriter sw = System.IO.File.AppendText(
+				GetTempPath() + "My Log File.txt");
+			try
+			{
+				string logLine = System.String.Format(
+					"{0:G}: {1}.", System.DateTime.Now, msg);
+				sw.WriteLine(logLine);
+			}
+			finally
+			{
+				sw.Close();
+			}
 		}
 
 		private void setTooltips()
@@ -250,8 +288,9 @@ namespace MoveAndRename
 						newDirectories.Add(directories[j]);
 					}
 				}
-				catch (Exception)
+				catch (Exception e)
 				{
+					LogMessageToFile(e.ToString());
 					continue;
 				}
 			}
@@ -451,12 +490,183 @@ namespace MoveAndRename
 			public string path;
 		}
 
-		/// <summary>
-		/// Goes through all the destinationlist subdirectories and checks if any of them match the series name, and returns the one with the best match.
-		/// Where the best match is the one that contains the most amount of substrings from the series name.
-		/// </summary>
-		/// <param name="ser"></param>
-		private string getDestinationPath(Series ser)
+        private string BinarySearch(List<string> list, string str)
+        {
+            int l = 0;
+            int r = list.Count - 1;
+            // If we are search for a string in an empty list we terminate
+            if (l > r)
+            {
+                return "";
+            }
+
+            list.Sort();
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i] = list[i].ToLower();
+                string[] splLis = list[i].Split(' ');
+
+                string tempStr = "";
+                for (int j = 0; j < splLis.Length; j++)
+                {
+                    if(splLis[j] != "the")
+                    {
+                        if(j == splLis.Length - 1)
+                        {
+                            tempStr += splLis[i];
+                        }
+                        else
+                        {
+                            tempStr += splLis[i] + " ";
+                        }
+                    }
+                }             
+            }
+
+            int m = (l + r) / 2;
+            
+            return "";
+        }
+
+        private int levenshtein(string a, string b)
+        {
+            int n = a.Length;
+            int m = b.Length;
+            int[,] d = new int[n + 1, m + 1];
+
+            if(n == 0)
+            {
+                return m;
+            }
+
+            if(m == 0)
+            {
+                return n;
+            }
+
+            for (int i = 0; i <= n; d[i,0] = i++)
+            {
+
+            }
+            for (int j = 0; j <= m; d[0,j] = j++)
+            {
+
+            }
+
+            for (int i = 0; i <= n; i++)
+            {
+                for (int j = 0; j <= m; j++)
+                {
+                    int cost = (b[j - 1] == a[i - 1]) ? 0 : 1;
+
+                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
+                }
+            }
+            return d[n, m];
+        }
+
+        private string findBestStringMatch(List<string> list, string str)
+        {
+            list.Sort();
+            List<LevenstheinObj> impList = new List<LevenstheinObj>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                LevenstheinObj temp = new LevenstheinObj();
+                temp.SetOriginal(list[i]);
+                list[i] = list[i].ToLower();
+                string[] splLis = list[i].Split(' ');
+
+                string tempStr = "";
+                for (int j = 0; j < splLis.Length; j++)
+                {
+                    if (splLis[j] != "the")
+                    {
+                        if (j == splLis.Length - 1)
+                        {
+                            tempStr += splLis[i];
+                        }
+                        else
+                        {
+                            tempStr += splLis[i] + " ";
+                        }
+                    }
+                }
+                temp.SetChanged(tempStr);
+                impList.Add(temp);
+            }
+             
+            foreach (var item in impList)
+            {
+                item.SetCost(levenshtein(item.GetChanged(), str));
+            }
+
+            impList.Sort(new LevenstheinObjComparer());
+
+            return impList[0].GetOriginal();
+        }
+
+        private class LevenstheinObj
+        {
+            private string original;
+            private string changed;
+            private int cost;
+
+            public void SetOriginal(string a)
+            {
+                this.original = a;
+            }
+            public void SetChanged(string a)
+            {
+                this.changed = a;
+            }
+            public void SetCost(int a)
+            {
+                this.cost = a;
+            }
+
+            public string GetOriginal()
+            {
+                return this.original;
+            }
+            public string GetChanged()
+            {
+                return this.changed;
+            }
+            public int GetCost()
+            {
+                return this.cost;
+            }
+        }
+
+        class LevenstheinObjComparer : IComparer<LevenstheinObj>
+        {
+            public int Compare(LevenstheinObj a, LevenstheinObj b)
+            {
+
+                if (a.GetCost() == b.GetCost())
+                {
+                    return 0;
+                }
+                else if (a.GetCost() > b.GetCost())
+                {
+                    return 1;
+                }
+                else
+                {
+                    return -1;
+                }
+                
+            }
+        }
+
+
+
+        /// <summary>
+        /// Goes through all the destinationlist subdirectories and checks if any of them match the series name, and returns the one with the best match.
+        /// Where the best match is the one that contains the most amount of substrings from the series name.
+        /// </summary>
+        /// <param name="ser"></param>
+        private string getDestinationPath(Series ser)
 		{
 			List<string> possibleDirectories = new List<string>();
 			List<DestObj> de = new List<DestObj>();
@@ -756,8 +966,9 @@ namespace MoveAndRename
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
+				LogMessageToFile(e.ToString());
 				throw;
 			}
 		}
