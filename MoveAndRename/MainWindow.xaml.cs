@@ -28,7 +28,7 @@ namespace MoveAndRename
 		private List<HashSet<Series>> seriesMatchesSet = new List<HashSet<Series>>();
 		private Tuple<List<string>, List<string>> newSeriesFF;
 
-		private KodiControl kc = new KodiControl("192.168.0.101", "8080");
+		//private KodiControl kc = new KodiControl("192.168.0.101", "8080");
 
 		public MainWindow()
 		{
@@ -71,7 +71,7 @@ namespace MoveAndRename
 							Debug.WriteLine("3");
 							updateListbox(listBox1, new List<string>());
 							updateListbox(listBox, new List<string>());
-							updateKodiLibrary();
+							//updateKodiLibrary();
 							Debug.WriteLine("4");
 							Application.Current.Shutdown();
 						}
@@ -87,7 +87,7 @@ namespace MoveAndRename
 				}
 			}
 
-			kc.UpdateLibrary();
+			//kc.UpdateLibrary();
 		}
 
 		public string GetTempPath()
@@ -1096,14 +1096,17 @@ namespace MoveAndRename
 					else
 					{
 						movedFile = moveFile(ser.CurrentPath + "." + ser.Extension, destinationPath);
-					}					
+					}	
+                    				
 					// If the setting to include subtitles is set, we first get the subtitle which is in the appropriate language (english)
 					// then we use the path where we are sending our "series" file and we simply send the sub there as well, with the same name
 					// so it gets associated with the "series".
-					/*
+					
 					if (setObj.IncludeSubtitle)
 					{
-						List<string> subFiles = findSubFiles(System.IO.Path.GetDirectoryName(ser.CurrentPath));
+                        Debug.WriteLine("Current path: " + ser.CurrentPath);
+                        Debug.WriteLine("Directory name is: " + System.IO.Path.GetDirectoryName(ser.CurrentPath));    
+						/*List<string> subFiles = findSubFiles(System.IO.Path.GetDirectoryName(ser.CurrentPath));
 						if (subFiles.Count > 0)
 						{
 							string sub = getBestSubFile(subFiles);
@@ -1113,8 +1116,9 @@ namespace MoveAndRename
 
 							moveFile(sub, s + "." + fileExt);
 						}
+                        */
 					}
-					*/
+					
 					if (movedFile)
 					{
 						if(sp.Contains(ext))
@@ -1207,13 +1211,13 @@ namespace MoveAndRename
 				listBox1.Items.Add(ser.Name + " " + "S" + seasonNumber + "E" + episodeNumber + " Name: " + ser.Title);
 			}
 		}
-
+        /*
 		private void updateKodiLibrary()
 		{
 			KodiControl kc = new KodiControl("192.168.0.101", "8080");
 			kc.UpdateLibrary();
 		}
-
+        */
 		private void showNewSeriesMatches()
 		{
 			//Tuple<List<string>, List<string>> t = getNewSeries();
@@ -1301,7 +1305,7 @@ namespace MoveAndRename
 			moveSeriesMatches();
 			updateListbox(listBox1, new List<string>());
 			updateListbox(listBox, new List<string>());
-			updateKodiLibrary();
+			//updateKodiLibrary();
 		}
 
 		private void button_Click(object sender, RoutedEventArgs e)
@@ -1335,8 +1339,6 @@ namespace MoveAndRename
                 t.printSeries();
             }
 
-            double d = cosineSimiliarity("Julie loves me more than Linda loves me", "Jane likes me more than Julie loves me", 2);
-            
         }
     }
 

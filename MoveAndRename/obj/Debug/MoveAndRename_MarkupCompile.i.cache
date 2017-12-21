@@ -4,17 +4,17 @@
 exe
 C#
 .cs
-D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\
+C:\Users\erladion\Documents\GitHub\MoveAndRename\MoveAndRename\obj\Debug\
 MoveAndRename
 none
 false
 DEBUG;TRACE
-D:\Development\GitHub\MoveAndRename\MoveAndRename\App.xaml
+C:\Users\erladion\Documents\GitHub\MoveAndRename\MoveAndRename\App.xaml
 31595142453
 
-141088601973
-221831896083
+14-2064420642
+22-292728564
 ChoiceWindow.xaml;MainWindow.xaml;SettingsWindow.xaml;
 
-False
+True
 

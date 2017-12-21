@@ -125,14 +125,14 @@ namespace MoveAndRename
 			Content.Children.Add(remove);			
 		}
 
-		private void addFileTypesControls()
+		private void addFileTypesControls(object sender)
 		{
 			Content.Children.Clear();
 			Content.VerticalAlignment = VerticalAlignment.Top;
 			TextBlock tb = new TextBlock();
 			tb.Measure(new Size());
 			tb.Arrange(new Rect());
-			tb.Text = "Check this to include Subtitles in the search space";
+			tb.Text = "Check this to include " + sender.ToString() + " in the search space";
 			tb.TextWrapping = TextWrapping.WrapWithOverflow;
 			Content.Children.Add(tb);
 
@@ -142,17 +142,29 @@ namespace MoveAndRename
 			cb.HorizontalAlignment = HorizontalAlignment.Left;
 			cb.Unchecked += Cb_Unchecked;
 			cb.Checked += Cb_Checked;
+            cb.IsChecked = settingsObj.IncludeSubtitle;
+            cb.Name = sender.ToString();
 			Content.Children.Add(cb);
 		}
 
 		private void Cb_Unchecked(object sender, RoutedEventArgs e)
 		{
 			Debug.WriteLine("Uncked checkbox for episode");
-		}
+            if (((CheckBox)sender).Name.ToString() == FileTypes.Subtitle.ToString())
+            {
+                ((CheckBox)sender).IsChecked = false;
+                settingsObj.ChangeIncludeSub();
+            }
+        }
 
 		private void Cb_Checked(object sender, RoutedEventArgs e)
 		{
 			Debug.WriteLine("Checked checkbox for episode");
+            if(((CheckBox)sender).Name.ToString() == FileTypes.Subtitle.ToString())
+            {
+                ((CheckBox)sender).IsChecked = true;
+                settingsObj.ChangeIncludeSub();
+            }
 		}
 
 		private void remove_Click(object sender, EventArgs e)
@@ -234,8 +246,12 @@ namespace MoveAndRename
 			}
 			else if(treeView.SelectedItem.ToString() == FileTypes.Episode.ToString())
 			{
-				addFileTypesControls();
+				addFileTypesControls(treeView.SelectedItem);
 			}
+            else if (treeView.SelectedItem.ToString() == FileTypes.Subtitle.ToString())
+            {
+                addFileTypesControls(treeView.SelectedItem);
+            }
 		}			
 		
 		private void updateListbox(ListBox lb, HashSet<string> data)

@@ -12,4 +12,7 @@
       <Path value="F:\Downloads\Serier" />
     </Destinations>
   </Paths>
+  <Filetypes>
+    <Subtitle value="true" />
+  </Filetypes>
 </Settings>

@@ -86,9 +86,16 @@ namespace MoveAndRename
 			paths.Add(include);
 			paths.Add(exclude);
 			paths.Add(dests);
+
+            XElement filetypes = new XElement(ESettings.Filetypes.ToString());
+            XElement subtitles = new XElement(FileTypes.Subtitle.ToString());
+            subtitles.SetAttributeValue("value", includeSubtitle);
+
+            filetypes.Add(subtitles);
 			
 			XElement settings = new XElement("Settings");
 			settings.Add(paths);
+            settings.Add(filetypes);
 
 			XDocument doc = new XDocument();
 			doc.Add(settings);
@@ -119,6 +126,8 @@ namespace MoveAndRename
                     string str = path.Attribute("value").Value;
                     AddDestination(str);
                 }
+
+                // TODO Make it so we read the settings about Subtitles etc here
             }
             catch (FileNotFoundException e)
             {
