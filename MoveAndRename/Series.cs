@@ -2,7 +2,7 @@
 
 namespace MoveAndRename
 {
-	class Series
+	public class Series
 	{
 		public string Name { get; set; }
 		public int Season { get; set; }

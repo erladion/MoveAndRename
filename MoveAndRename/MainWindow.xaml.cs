@@ -362,6 +362,65 @@ namespace MoveAndRename
 			return new Series(name, Convert.ToInt32(season), Convert.ToInt32(episode), "", path, ext);
 		}
 
+        private Series regexMatch(string s)
+        {
+            string[] m = Regex.Split(s, @"S([0-9]+)E([0-9]+)", RegexOptions.IgnoreCase);
+            //Match m = Regex.Match(s, @"S([0-9]+)E([0-9]+)", RegexOptions.IgnoreCase);
+            Debug.WriteLine("In regex match");            
+            Debug.WriteLine(m.Length);
+            for (int i = 0; i < m.Length; i++)
+            {
+                Debug.WriteLine("Part: " + i);
+                Debug.WriteLine("Content: " + m[i]);
+                Debug.WriteLine("-----------------");
+            }
+
+            return new Series(m[0], Convert.ToInt32(m[1]), Convert.ToInt32(m[2]));
+        }
+
+        /// <summary>
+        /// Removes unwanted characters from a string, mainly to be used on strings for paths
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        private string sanitizeString(string str)
+        {
+            Debug.WriteLine("Input string: " + str);
+            string retStr = "";
+
+            // Hopefully this covers all needed cases         
+            List<char> unwantedChars = Path.GetInvalidPathChars().ToList();
+            char[] f = Path.GetInvalidFileNameChars();            
+            foreach (var item in f)
+            {
+                if (!unwantedChars.Contains(item))
+                {
+                    unwantedChars.Add(item);
+                }
+            }
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                int count = 0;
+                for (int j = 0; j < unwantedChars.Count; j++)
+                {
+                    if(str[i] == unwantedChars[j])
+                    {
+                        retStr += "";
+                        count++;
+                        break;
+                    }
+                }
+                if(count == 0)
+                {
+                    retStr += str[i];
+                }
+                count = 0;
+            }
+
+            return retStr;
+        }
+
 		/*
 		*
 		* TODO: Might need to change createSeries so that it regex matches the S??E?? and takes everything infront and use as name,
@@ -565,7 +624,7 @@ namespace MoveAndRename
             return d[n, m];
         }
 
-        private string findBestStringMatch(List<string> list, string str)
+        private Tuple<string, double> findBestStringMatch(List<string> list, string str)
         {
             list.Sort();
             List<LevenstheinObj> impList = new List<LevenstheinObj>();
@@ -597,11 +656,26 @@ namespace MoveAndRename
              
             foreach (var item in impList)
             {
-                item.SetCost(levenshtein(item.GetChanged(), str));
+                foreach (var it in setObj.DestinationList)
+                {
+                    //Debug.WriteLine("Checking if: " + item.GetChanged());
+                    //Debug.WriteLine("contains: " + it.ToLower());
+                    //Debug.WriteLine("Original string: " + item.GetOriginal());
+                    if (item.GetChanged().Contains(it.ToLower()))
+                    {
+                        //var levenshteinCost = levenshtein(item.GetChanged().Replace(it.ToLower(), ""), str.ToLower());
+                        var cosineCost = cosineSimiliarity(item.GetChanged().Replace(it.ToLower(), ""), str.ToLower(), 2);
+                        //Debug.WriteLine("Levenshtein: " + levenshteinCost);
+                        //Debug.WriteLine("Cosine: " + cosineCost);
+                        item.SetCost(cosineCost);
+                    }
+                }
+                
             }
 
             impList.Sort(new LevenstheinObjComparer());
 
+            /*
             foreach (var item in impList)
             {
                 Debug.WriteLine("-------------------------------");
@@ -610,15 +684,17 @@ namespace MoveAndRename
                 Debug.WriteLine("Cost: " + item.GetCost());
                 Debug.WriteLine("-------------------------------");
             }
+            */
 
-            return impList[0].GetOriginal();
+            return new Tuple<string, double>(impList[0].GetOriginal(), impList[0].GetCost());
+            //return impList[0].GetOriginal();
         }
 
         private class LevenstheinObj
         {
             private string original;
             private string changed;
-            private int cost;
+            private double cost;
 
             public void SetOriginal(string a)
             {
@@ -628,7 +704,7 @@ namespace MoveAndRename
             {
                 this.changed = a;
             }
-            public void SetCost(int a)
+            public void SetCost(double a)
             {
                 this.cost = a;
             }
@@ -641,7 +717,7 @@ namespace MoveAndRename
             {
                 return this.changed;
             }
-            public int GetCost()
+            public double GetCost()
             {
                 return this.cost;
             }
@@ -658,16 +734,107 @@ namespace MoveAndRename
                 }
                 else if (a.GetCost() > b.GetCost())
                 {
-                    return 1;
+                    return -1;
                 }
                 else
                 {
-                    return -1;
+                    return 1;
                 }
                 
             }
         }
 
+        private List<string> createNGrams(string str, int n)
+        {
+            if (n > str.Length)
+            {
+                return new List<string>();
+            }
+
+            List<string> nGrams = new List<string>();
+
+            for (int i = 0; i < str.Length-n+1; i++)
+            {
+                string s = str.Substring(i, n);
+                nGrams.Add(s);
+            }
+
+            return nGrams;
+        }
+
+        private double cosineSimiliarity(string a, string b, int nGrams)
+        {
+            List<string> aNGrams = createNGrams(a, nGrams);
+            List<string> bNGrams = createNGrams(b, nGrams);           
+
+            List<string> abGrams = aNGrams.Union(bNGrams).ToList();
+
+            List<int> aFreq = Enumerable.Repeat(0, abGrams.Count).ToList();
+            List<int> bFreq = Enumerable.Repeat(0, abGrams.Count).ToList();
+            for (int i = 0; i < abGrams.Count; i++)
+            {
+                aFreq[i] = countStringOccurences(a, abGrams[i]);
+                bFreq[i] = countStringOccurences(b, abGrams[i]);
+            }
+           
+            /*
+            for (int i = 0; i < abGrams.Count; i++)
+            {
+                Debug.WriteLine("Word: " + abGrams[i] + " A count: " + aFreq[i] + " B count: " + bFreq[i]);
+            }
+            */
+
+            double dotProduct = 0;
+            for (int i = 0; i < aFreq.Count; i++)
+            {
+                dotProduct += (aFreq[i] * bFreq[i]);
+            }
+            //Debug.WriteLine("Dotproduct: " + dotProduct);
+
+            double magnitudeA = magnitude(aFreq);
+            //Debug.WriteLine("Magnitued for A: " + magnitudeA);
+            double magnitudeB = magnitude(bFreq);
+            //Debug.WriteLine("Magnitued for B: " + magnitudeB);
+
+            double ret = dotProduct / (magnitudeA * magnitudeB);
+            //Debug.WriteLine("Answer: " + ret);
+
+            return ret;
+        }
+
+        private double magnitude(List<int> li)
+        {
+            double magnitudeA = 0;
+            for (int i = 0; i < li.Count; i++)
+            {
+                magnitudeA += li[i] * li[i];
+            }
+
+            return Math.Sqrt(magnitudeA);
+        }
+
+        private int countStringOccurences(string s, string p)
+        {
+            int count = 0;
+            int i = 0;
+            while ((i = s.IndexOf(p, i)) != -1)
+            {
+                i += p.Length;
+                count++;
+            }
+            return count;
+        }
+
+
+        private void testFunc(string test)
+        {
+            foreach (var item in setObj.DestinationList)
+            {
+                string[] subDirs = Directory.GetDirectories(item);
+
+                findBestStringMatch(subDirs.ToList(), test);
+            }
+        }
 
 
         /// <summary>
@@ -680,13 +847,28 @@ namespace MoveAndRename
 			List<string> possibleDirectories = new List<string>();
 			List<DestObj> de = new List<DestObj>();
 			Debug.WriteLine(setObj.DestinationList.Count);
-			foreach (var item in setObj.DestinationList)
+            string bestMatch = "";
+
+            foreach (var item in setObj.DestinationList)
 			{
 				string[] subDirectories = Directory.GetDirectories(item);
 
                 // TODO CHECK THIS
-                //findBestStringMatch(subDirectories.ToList(), ser.Name);
+                Tuple <string, double> bestMatchTuple = findBestStringMatch(subDirectories.ToList(), ser.Name);
 
+                Debug.WriteLine("Best string found: " + bestMatchTuple.Item1);
+                Debug.WriteLine("Cosine value: " + bestMatchTuple.Item2);
+
+                if (bestMatchTuple.Item2 < 0.8)
+                {
+                    bestMatch = "";
+                }
+                else
+                {
+                    bestMatch = bestMatchTuple.Item1;
+                }
+
+                /*
 				for (int i = 0; i < subDirectories.Length; i++)
 				{
 					List<string> subdirname = subDirectories[i].Split('\\').ToList();
@@ -712,8 +894,9 @@ namespace MoveAndRename
 						de.Add(deo);
 					}
 				}
+                */
 			}
-
+            /*
 			de.Sort(new DestObjComparer());
 			Debug.WriteLine("Searched for: " + ser.Name);
 			Debug.WriteLine("Best match: " + de[0].str);
@@ -729,7 +912,10 @@ namespace MoveAndRename
 			{
 				return "";
 			}
+            
 			return de[0].path;
+            */
+            return bestMatch;
 		}
 
 		/// <summary>
@@ -859,6 +1045,7 @@ namespace MoveAndRename
 				string destinationPath = getDestinationPath(ser);
 				if(destinationPath.Length == 0)
 				{
+                    Debug.WriteLine("No folder exists for the series, so we create one");
 					// We got no current folder for the series, so we create one.
 					// TODO: Write code to create the correct folder
 					if(setObj.DestinationList.Count > 1)
@@ -871,7 +1058,9 @@ namespace MoveAndRename
 					{
 						destinationPath = setObj.DestinationList.First();
 					}
-					destinationPath += '\\' + ser.Name;
+                    ser.Name = sanitizeString(ser.Name);
+                    destinationPath += '\\' + ser.Name;
+                    Debug.WriteLine("Folder name after creation: " + destinationPath);
 				}
 				Debug.WriteLine("Current destination path: " + destinationPath);
 				destinationPath += '\\' + "Season " + ser.Season;
@@ -879,6 +1068,9 @@ namespace MoveAndRename
 				ser.Name = ser.Name.Trim(' ');
 
 				string printingEpisode = (ser.Episode < 10 ? "0" + ser.Episode.ToString() : ser.Episode.ToString());
+
+                ser.Name = sanitizeString(ser.Name);
+                ser.Title = sanitizeString(ser.Title);
 
 				if (ser.Episode < 10)
 				{
@@ -908,6 +1100,7 @@ namespace MoveAndRename
 					// If the setting to include subtitles is set, we first get the subtitle which is in the appropriate language (english)
 					// then we use the path where we are sending our "series" file and we simply send the sub there as well, with the same name
 					// so it gets associated with the "series".
+					/*
 					if (setObj.IncludeSubtitle)
 					{
 						List<string> subFiles = findSubFiles(System.IO.Path.GetDirectoryName(ser.CurrentPath));
@@ -921,6 +1114,7 @@ namespace MoveAndRename
 							moveFile(sub, s + "." + fileExt);
 						}
 					}
+					*/
 					if (movedFile)
 					{
 						if(sp.Contains(ext))
@@ -1053,16 +1247,38 @@ namespace MoveAndRename
 
 			foreach (var set in lh)
 			{
+                Debug.WriteLine("Set count: " + set.Count);
 				if (set.Count > 0)
 				{
+                    if(set.Count > 1)
+                    {
+                        string cho = ChoiceWindow.GetChoice(set);
+                        Debug.WriteLine(cho);
+
+                        foreach (var item in set)
+                        {
+                            Debug.WriteLine("Comparing: " + item.Name + " with " + cho);
+                            if(item.Name == cho)
+                            {
+                                HashSet <Series> ne = new HashSet<Series>();
+                                ne.Add(item);
+                                seriesMatchesSet.Add(ne);
+                                break;
+                            }
+                        }                           
+                    }
+                    else
+                    {
+                        seriesMatchesSet.Add(set);
+                    }
 					Debug.WriteLine("Before move file");
 					foreach (var item in set)
 					{
 						item.printSeries();
 					}
 					showMatches(set);
-					seriesMatchesSet.Add(set);
 				}
+                
 			}
 		}
 
@@ -1103,9 +1319,28 @@ namespace MoveAndRename
 		{
 
 		}
-	}
 
-	class SeriesComparer : IEqualityComparer<Series>
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            string a = sanitizeString("");
+
+            List<string> l = new List<string>();
+            l.Add("Greys.Anatomy.S14E08.720p.HDTV.x264-KILLERS[rarbg]");
+            l.Add("Scandal.S06E15.WEBRip.x264-RARBG");
+            l.Add("The.Blacklist.S05E08.WEBRip.x264-RARBG");
+
+            foreach (var item in l)
+            {
+                var t = regexMatch(item);
+                t.printSeries();
+            }
+
+            double d = cosineSimiliarity("Julie loves me more than Linda loves me", "Jane likes me more than Julie loves me", 2);
+            
+        }
+    }
+
+    class SeriesComparer : IEqualityComparer<Series>
 	{
 		public bool Equals(Series a, Series b)
 		{

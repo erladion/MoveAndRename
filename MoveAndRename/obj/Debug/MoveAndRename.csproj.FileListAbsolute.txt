@@ -33,3 +33,4 @@ D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.csproj
 D:\Development\GitHub\MoveAndRename\MoveAndRename\bin\Debug\TVDBSharp.dll
 D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\ChoiceWindow.g.cs
 D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\ChoiceWindow.baml
+D:\Development\GitHub\MoveAndRename\MoveAndRename\obj\Debug\MoveAndRename.csproj.CoreCompileInputs.cache
