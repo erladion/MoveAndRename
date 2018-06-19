@@ -38,7 +38,7 @@ namespace MoveAndRename
 
 		public void writeFiletypesToXml(string filename)
 		{
-			Console.WriteLine("Writing filetype settings to XML");
+			Debug.WriteLine("Writing filetype settings to XML");
 			XDocument doc = XDocument.Load("settings.xml");
 			XElement ftypes = new XElement("Filetypes");
 			XElement incNFO = new XElement("IncNFO");
@@ -51,14 +51,14 @@ namespace MoveAndRename
 
 		public void writeSettingsToXml(string filename)
 		{
-			Console.WriteLine("Writing settings to XML");
+			Debug.WriteLine("Writing settings to XML");
 			XElement dests = new XElement(Paths.Destinations.ToString());
 			dests.SetAttributeValue("count", destinationList.Count);
 			foreach (var item in destinationList)
 			{
 				XElement p = new XElement("Path");
 				p.SetAttributeValue("value", item);
-				Console.WriteLine("Adding: " + item.ToString() + " to destination");
+				Debug.WriteLine("Adding: " + item.ToString() + " to destination");
 				dests.Add(p);
 			}
 
@@ -68,7 +68,7 @@ namespace MoveAndRename
 			{
 				XElement p = new XElement("Path");
 				p.SetAttributeValue("value", item);
-				Console.WriteLine("Adding: " + item.ToString() + " to include ");
+				Debug.WriteLine("Adding: " + item.ToString() + " to include ");
 				include.Add(p);
 			}
 
@@ -78,7 +78,7 @@ namespace MoveAndRename
 			{
 				XElement p = new XElement("Path");
 				p.SetAttributeValue("value", item);
-				Console.WriteLine("Adding: " + item.ToString() + " to exclude");
+				Debug.WriteLine("Adding: " + item.ToString() + " to exclude");
 				exclude.Add(p);
 			}
 			
@@ -142,7 +142,7 @@ namespace MoveAndRename
 		{
 			if (!includeList.Contains(str))
 			{
-				Console.WriteLine("Includelist property changed!");
+				Debug.WriteLine("Includelist property changed!");
 				includeList.Add(str);
 				OnPropertyChanged("settings");
 			}
@@ -152,7 +152,7 @@ namespace MoveAndRename
 		{
 			if (!excludeList.Contains(str))
 			{
-				Console.WriteLine("Excludelist property changed!");
+				Debug.WriteLine("Excludelist property changed!");
 				excludeList.Add(str);
 				OnPropertyChanged("settings");
 			}
@@ -162,7 +162,7 @@ namespace MoveAndRename
 		{
 			if (!destinationList.Contains(str))
 			{
-				Console.WriteLine("Destinationlist property changed!");
+				Debug.WriteLine("Destinationlist property changed!");
 				destinationList.Add(str);
 				OnPropertyChanged("settings");
 			}

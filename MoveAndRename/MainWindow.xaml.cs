@@ -207,9 +207,9 @@ namespace MoveAndRename
 		private void refreshButton_Click(object sender, RoutedEventArgs e)
 		{
 			newSeriesFF = getNewSeries();
-			List<string> test = newSeriesFF.Item1;
-			test = cutPath(test);
-			updateListbox(listBox, test);
+			List<string> newSeries = newSeriesFF.Item1;
+			newSeries = cutPath(newSeries);
+			updateListbox(listBox, newSeries);
 		}
 
 		private List<string> getFilesInDir(string dirPath)
@@ -266,6 +266,7 @@ namespace MoveAndRename
 			List<string> newDirectories = new List<string>();
 			List<string> newFiles = new List<string>();
 			HashSet<string> excludeList = setObj.ExcludeList;
+			HashSet<string> destList = setObj.DestinationList;
 
 			foreach (var item in includeList)
 			{
@@ -281,7 +282,7 @@ namespace MoveAndRename
 					var directories = Directory.GetDirectories(item);
 					for (int j = 0; j < directories.Length; j++)
 					{
-						if (excludeList.Contains(directories[j]))
+						if (excludeList.Contains(directories[j]) || destList.Contains(directories[j]))
 						{
 							continue;
 						}
@@ -480,7 +481,7 @@ namespace MoveAndRename
 					name += s2[i] + " ";
 				}
 			}
-			name.TrimEnd(' ');
+			name = name.TrimEnd(' ');
 			if (season == 0 || episode == 0)
 			{
 				return new Series();
@@ -627,10 +628,10 @@ namespace MoveAndRename
         private Tuple<string, double> findBestStringMatch(List<string> list, string str)
         {
             list.Sort();
-            List<LevenstheinObj> impList = new List<LevenstheinObj>();
+            List<stringCostObj> impList = new List<stringCostObj>();
             for (int i = 0; i < list.Count; i++)
             {
-                LevenstheinObj temp = new LevenstheinObj();
+                stringCostObj temp = new stringCostObj();
                 temp.SetOriginal(list[i]);
                 list[i] = list[i].ToLower();
                 string[] splLis = list[i].Split(' ');
@@ -673,7 +674,7 @@ namespace MoveAndRename
                 
             }
 
-            impList.Sort(new LevenstheinObjComparer());
+            impList.Sort(new stringCostObjComparer());
 
             /*
             foreach (var item in impList)
@@ -690,7 +691,7 @@ namespace MoveAndRename
             //return impList[0].GetOriginal();
         }
 
-        private class LevenstheinObj
+        private class stringCostObj
         {
             private string original;
             private string changed;
@@ -723,9 +724,9 @@ namespace MoveAndRename
             }
         }
 
-        class LevenstheinObjComparer : IComparer<LevenstheinObj>
+        class stringCostObjComparer : IComparer<stringCostObj>
         {
-            public int Compare(LevenstheinObj a, LevenstheinObj b)
+            public int Compare(stringCostObj a, stringCostObj b)
             {
 
                 if (a.GetCost() == b.GetCost())
@@ -1106,17 +1107,22 @@ namespace MoveAndRename
 					{
                         Debug.WriteLine("Current path: " + ser.CurrentPath);
                         Debug.WriteLine("Directory name is: " + System.IO.Path.GetDirectoryName(ser.CurrentPath));    
-						/*List<string> subFiles = findSubFiles(System.IO.Path.GetDirectoryName(ser.CurrentPath));
+						List<string> subFiles = findSubFiles(System.IO.Path.GetDirectoryName(ser.CurrentPath));
+						Debug.WriteLine("Sub files found: " + subFiles.Count);
 						if (subFiles.Count > 0)
 						{
 							string sub = getBestSubFile(subFiles);
+							Debug.WriteLine("Best sub file: " + sub);
 
 							string s = System.IO.Path.GetFileNameWithoutExtension(destinationPath);
+							Debug.WriteLine("s: " + s);
 							string fileExt = System.IO.Path.GetExtension(sub);
 
-							moveFile(sub, s + "." + fileExt);
+							Debug.WriteLine("Before mov sub file");
+							Debug.WriteLine("Wanted file name after move: " + s + fileExt);
+							moveFile(sub, s + fileExt);
 						}
-                        */
+                        
 					}
 					
 					if (movedFile)
