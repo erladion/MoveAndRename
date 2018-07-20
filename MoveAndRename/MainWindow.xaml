@@ -20,7 +20,6 @@
             </Menu>
         </DockPanel>
         <Button x:Name="refreshButton" Content="Refresh" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10" Click="refreshButton_Click" ToolTipOpening="refreshButton_ToolTipOpening" ToolTip=""/>
-        <Button Content="Test" Width="74" VerticalAlignment="Bottom" Height="20" HorizontalAlignment="Left" Click="Button_Click_1" Margin="100, 0, 10, 10"/>
         <Button x:Name="button" Content="Button" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="426,0,0,10" Click="button_Click" ToolTipOpening="button_ToolTipOpening" ToolTip=""/>
         <Button x:Name="moveButton" Content="Move Files" Width="75" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="607,0,10,10" Click="move_Click"/>
         <ListBox x:Name="listBox" HorizontalAlignment="Left" Height="300" Margin="10,27,0,0" VerticalAlignment="Top" Width="256"/>

@@ -10,7 +10,10 @@ namespace MoveAndRename
 		public string Title { get; set; }
 		public string CurrentPath { get; set; }
 		public string Extension { get; set; }
-
+        public string DestinationPath { get; set; }
+        public bool GotSubtitle { get; set; }
+        public string SubtitlePath { get; set; }
+        
 		public Series()
 		{
 			this.Name = "";
@@ -58,6 +61,8 @@ namespace MoveAndRename
 			Debug.WriteLine("Season: " + Season + " Episode: " + Episode);
 			Debug.WriteLine(CurrentPath);
 			Debug.WriteLine(Extension);
+			Debug.WriteLine("Got subtitle: " + GotSubtitle);
+			Debug.WriteLine("Subtitle path: " + SubtitlePath);
 			Debug.WriteLine("---Done printing series info---");
 		}
 	}
