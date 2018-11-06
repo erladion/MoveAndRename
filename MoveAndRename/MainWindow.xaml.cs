@@ -237,12 +237,10 @@ namespace MoveAndRename
 						Debug.WriteLine(System.IO.Path.GetExtension(files[i]));
 						if (System.IO.Path.GetExtension(files[i]) == "." + item.ToString())
 						{
-							Debug.WriteLine("Add file based on PATH");
 							foundFiles.Add(files[i]);
 						}
 						if (setObj.IncludeNfo)
 						{
-							Debug.WriteLine("Include nfo: true");
 							if (files[i].EndsWith(".nfo"))
 							{
 								foundFiles.Add(files[i]);
@@ -260,7 +258,6 @@ namespace MoveAndRename
 		private Tuple<List<string>, List<string>> getNewSeries()
 		{
 			Debug.WriteLine("-----Currently in getNewSeries-----");
-			//List<string> res = new List<string>();
 			HashSet<string> includeList = setObj.IncludeList;
 
 			List<string> newDirectories = new List<string>();
@@ -987,22 +984,9 @@ namespace MoveAndRename
 			string episodeNumber;
 			foreach (var ser in seriesSet)
 			{
-				if (ser.Season < 10)
-				{
-					seasonNumber = "0" + ser.Season;
-				}
-				else
-				{
-					seasonNumber = ser.Season.ToString();
-				}
-				if (ser.Episode < 10)
-				{
-					episodeNumber = "0" + ser.Episode;
-				}
-				else
-				{
-					episodeNumber = ser.Episode.ToString();
-				}
+				seasonNumber = (ser.Season < 10 ? "0" + ser.Season : ser.Season.ToString());
+				episodeNumber = (ser.Season < 10 ? "0" + ser.Episode : ser.Episode.ToString());
+
 				Debug.WriteLine("Showing currently printed information in right listbox");
 				Debug.WriteLine(seasonNumber);
 				Debug.WriteLine(episodeNumber);
@@ -1174,14 +1158,7 @@ namespace MoveAndRename
 
 			Debug.WriteLine("Series title: " + s.Title);
 
-			if (s.Episode < 10)
-			{
-				destinationPath += '\\' + s.Name + " - " + s.Season + "x0" + s.Episode + " - " + s.Title + "." + s.Extension;
-			}
-			else
-			{
-				destinationPath += '\\' + s.Name + " - " + s.Season + "x" + s.Episode + " - " + s.Title + "." + s.Extension;
-			}
+			destinationPath += '\\' + s.Name + " - " + s.Season + (s.Episode < 10 ? "x0" : "x") + s.Episode + " - " + s.Title + "." + s.Extension;
 
 			s.DestinationPath = destinationPath;
 		}
