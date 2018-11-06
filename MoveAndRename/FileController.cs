@@ -19,8 +19,8 @@ namespace MoveAndRename
 
 		public void LogMessageToFile(string msg)
 		{
-				string path = System.Environment.GetEnvironmentVariable("TEMP");
-				if (!path.EndsWith("\\")) path += "\\";
+			string path = System.Environment.GetEnvironmentVariable("TEMP");
+			if (!path.EndsWith("\\")) path += "\\";
 
 			System.IO.StreamWriter sw = System.IO.File.AppendText(path + "My Log File.txt");
 			try
@@ -32,6 +32,48 @@ namespace MoveAndRename
 			{
 				sw.Close();
 			}
+		}
+
+		public List<string> getFilesInDir(string dirPath)
+		{
+			Debug.WriteLine("-----Currently in getFilesInDir-----");
+			Debug.WriteLine(dirPath);
+			string[] files = { };
+
+			if (Directory.Exists(dirPath))
+			{
+				files = Directory.GetFiles(dirPath);
+			}
+			List<string> fs = new List<string>();
+			fs.AddRange(files);
+			Debug.WriteLine(files.Length);
+
+			if (files.Length != 0)
+			{
+				List<string> foundFiles = new List<string>();
+				for (int i = 0; i < files.Length; i++)
+				{
+					foreach (var item in Enum.GetValues(typeof(VideoExtensions)))
+					{
+						Debug.WriteLine("Current item: " + item);
+						Debug.WriteLine(System.IO.Path.GetExtension(files[i]));
+						if (System.IO.Path.GetExtension(files[i]) == "." + item.ToString())
+						{
+							foundFiles.Add(files[i]);
+						}
+						if (setObj.IncludeNfo)
+						{
+							if (files[i].EndsWith(".nfo"))
+							{
+								foundFiles.Add(files[i]);
+							}
+						}
+					}
+				}
+				Debug.WriteLine("Found files size: " + foundFiles.Count);
+				return foundFiles;
+			}
+			return new List<string>();
 		}
 
 		public void removeFolder(string path)
