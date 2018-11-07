@@ -252,7 +252,6 @@ namespace MoveAndRename
 				return foundFiles;
 			}
 			return new List<string>();
-
 		}
 
 		private Tuple<List<string>, List<string>> getNewSeries()
@@ -437,7 +436,6 @@ namespace MoveAndRename
 			Debug.WriteLine("-----Currently in createSeries-----");
 			Debug.WriteLine("Input string: " + str);
 			Series ser;
-			//string[] s = str.Split('.');
 			string[] s = str.Split('\\');
 			string[] fileN = s[s.Length - 1].Split('.');
 			string pName = "";
@@ -909,9 +907,11 @@ namespace MoveAndRename
 					
 					if (setObj.IncludeSubtitle)
 					{
+						Debug.WriteLine("Include subtitle: true");
 						if (ser.GotSubtitle)
 						{
-							moveFile(ser.SubtitlePath, System.IO.Path.GetFileNameWithoutExtension(ser.DestinationPath) + System.IO.Path.GetExtension(ser.SubtitlePath));
+							Debug.WriteLine("Got subtitle: true");
+							moveFile(ser.SubtitlePath, Path.ChangeExtension(ser.DestinationPath, Path.GetExtension(ser.SubtitlePath)));
 						}                        
 					}
 					

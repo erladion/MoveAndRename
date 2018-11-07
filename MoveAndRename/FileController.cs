@@ -19,6 +19,7 @@ namespace MoveAndRename
 
 		public void LogMessageToFile(string msg)
 		{
+			Debug.WriteLine("-----Writing message to log-----");
 			string path = System.Environment.GetEnvironmentVariable("TEMP");
 			if (!path.EndsWith("\\")) path += "\\";
 
@@ -70,7 +71,7 @@ namespace MoveAndRename
 						}
 					}
 				}
-				Debug.WriteLine("Found files size: " + foundFiles.Count);
+				Debug.WriteLine("Files found: " + foundFiles.Count);
 				return foundFiles;
 			}
 			return new List<string>();
@@ -78,6 +79,7 @@ namespace MoveAndRename
 
 		public void removeFolder(string path)
 		{
+			Debug.WriteLine("-----Currently in removeFolder-----");
 			try
 			{
 				foreach (var item in setObj.IncludeList)
@@ -130,6 +132,7 @@ namespace MoveAndRename
 		/// <returns></returns>
 		public bool moveFile(string from, string to)
 		{
+			Debug.WriteLine("-----Currently in moveFile-----");
 			bool fromOk = false;
 			foreach (var item in setObj.IncludeList)
 			{
@@ -173,6 +176,7 @@ namespace MoveAndRename
 		/// <param name="ser">Series object for the file to be moved</param>
 		public void moveFile(HashSet<Series> serSet)
 		{
+			Debug.WriteLine("-----Currently in moveFile(HashSet<Series>)-----");
 			foreach (var ser in serSet)
 			{
 				Debug.WriteLine("Current path: " + ser.CurrentPath);
