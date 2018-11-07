@@ -35,7 +35,7 @@ namespace MoveAndRename
 			}
 		}
 
-		public List<string> getFilesInDir(string dirPath)
+		public List<string> GetFilesInDir(string dirPath)
 		{
 			Debug.WriteLine("-----Currently in getFilesInDir-----");
 			Debug.WriteLine(dirPath);
@@ -77,7 +77,7 @@ namespace MoveAndRename
 			return new List<string>();
 		}
 
-		public void removeFolder(string path)
+		public void RemoveFolder(string path)
 		{
 			Debug.WriteLine("-----Currently in removeFolder-----");
 			try
@@ -104,7 +104,7 @@ namespace MoveAndRename
 
 							foreach (var dir in dirs)
 							{
-								removeFolder(dir);
+								RemoveFolder(dir);
 							}
 							Directory.Delete(path, false);
 						}
@@ -130,7 +130,7 @@ namespace MoveAndRename
 		/// <param name="from"></param>
 		/// <param name="to"></param>
 		/// <returns></returns>
-		public bool moveFile(string from, string to)
+		public bool MoveFile(string from, string to)
 		{
 			Debug.WriteLine("-----Currently in moveFile-----");
 			bool fromOk = false;
@@ -174,9 +174,8 @@ namespace MoveAndRename
 		/// </summary>
 		/// <param name="path">Destination path</param>
 		/// <param name="ser">Series object for the file to be moved</param>
-		public void moveFile(HashSet<Series> serSet)
+		public void MoveFile(HashSet<Series> serSet)
 		{
-			Debug.WriteLine("-----Currently in moveFile(HashSet<Series>)-----");
 			foreach (var ser in serSet)
 			{
 				Debug.WriteLine("Current path: " + ser.CurrentPath);
@@ -188,11 +187,11 @@ namespace MoveAndRename
 					string ext = "." + ser.Extension;
 					if (ser.CurrentPath.Contains(ext))
 					{
-						movedFile = moveFile(ser.CurrentPath, ser.DestinationPath);
+						movedFile = MoveFile(ser.CurrentPath, ser.DestinationPath);
 					}
 					else
 					{
-						movedFile = moveFile(ser.CurrentPath + "." + ser.Extension, ser.DestinationPath);
+						movedFile = MoveFile(ser.CurrentPath + "." + ser.Extension, ser.DestinationPath);
 					}
 
 					// If the setting to include subtitles is set, we first get the subtitle which is in the appropriate language (english)
@@ -201,9 +200,11 @@ namespace MoveAndRename
 
 					if (setObj.IncludeSubtitle)
 					{
+						Debug.WriteLine("Include subtitle: true");
 						if (ser.GotSubtitle)
 						{
-							moveFile(ser.SubtitlePath, System.IO.Path.GetFileNameWithoutExtension(ser.DestinationPath) + System.IO.Path.GetExtension(ser.SubtitlePath));
+							Debug.WriteLine("Got subtitle: true");
+							MoveFile(ser.SubtitlePath, Path.ChangeExtension(ser.DestinationPath, Path.GetExtension(ser.SubtitlePath)));
 						}
 					}
 
@@ -211,11 +212,11 @@ namespace MoveAndRename
 					{
 						if (sp.Contains(ext))
 						{
-							removeFolder(System.IO.Path.GetDirectoryName(sp));
+							RemoveFolder(Path.GetDirectoryName(sp));
 						}
 						else
 						{
-							removeFolder(sp);
+							RemoveFolder(sp);
 						}
 					}
 				}
