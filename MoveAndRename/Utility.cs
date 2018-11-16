@@ -29,6 +29,25 @@ namespace MoveAndRename
 			}
 		}
 
+
+		/// <summary>
+		/// Parses a user specified format for series names and makes sure it all good.
+		/// </summary>
+		/// <param name="str"></param>
+		/// <returns></returns>
+		public static string ParseSeriesFormat(string str)
+		{
+
+
+			return "";
+		}
+
+		/// <summary>
+		/// Creates n-grams from a string, n-grams are 
+		/// </summary>
+		/// <param name="str">Input string to create n-grams from</param>
+		/// <param name="n">Size of the n-grams, have to be smaller than the length of the word or an empty list will be returned</param>
+		/// <returns></returns>
 		private static List<string> CreateNGrams(string str, int n)
 		{
 			if (n > str.Length)
@@ -99,7 +118,7 @@ namespace MoveAndRename
 		}
 
 		/// <summary>
-		/// Removes unwanted characters from a string, mainly to be used on strings for paths
+		/// Removes unwanted characters from a string, mainly to be used on strings for paths.
 		/// </summary>
 		/// <param name="str"></param>
 		/// <returns></returns>
@@ -108,16 +127,7 @@ namespace MoveAndRename
 			Debug.WriteLine("Input string: " + str);
 			string retStr = "";
 
-			// Hopefully this covers all needed cases         
-			List<char> unwantedChars = Path.GetInvalidPathChars().ToList();
-			char[] f = Path.GetInvalidFileNameChars();
-			foreach (var item in f)
-			{
-				if (!unwantedChars.Contains(item))
-				{
-					unwantedChars.Add(item);
-				}
-			}
+			List<char> unwantedChars = Path.GetInvalidPathChars().Union(Path.GetInvalidFileNameChars()).ToList();
 
 			for (int i = 0; i < str.Length; i++)
 			{
