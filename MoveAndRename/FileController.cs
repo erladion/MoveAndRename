@@ -17,24 +17,6 @@ namespace MoveAndRename
 			this.setObj = sObj;
 		}
 
-		public void LogMessageToFile(string msg)
-		{
-			Debug.WriteLine("-----Writing message to log-----");
-			string path = System.Environment.GetEnvironmentVariable("TEMP");
-			if (!path.EndsWith("\\")) path += "\\";
-
-			System.IO.StreamWriter sw = System.IO.File.AppendText(path + "My Log File.txt");
-			try
-			{
-				string logLine = System.String.Format("{0:G}: {1}.", System.DateTime.Now, msg);
-				sw.WriteLine(logLine);
-			}
-			finally
-			{
-				sw.Close();
-			}
-		}
-
 		public List<string> GetFilesInDir(string dirPath)
 		{
 			Debug.WriteLine("-----Currently in getFilesInDir-----");
@@ -119,7 +101,7 @@ namespace MoveAndRename
 			}
 			catch (Exception e)
 			{
-				LogMessageToFile(e.ToString());
+				Utility.LogMessageToFile(e.ToString());
 				throw;
 			}
 		}
