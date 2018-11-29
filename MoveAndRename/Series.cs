@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace MoveAndRename
 {
@@ -27,19 +28,44 @@ namespace MoveAndRename
 			this.Title = "";
 		}
 
+		public Series(string name, string season, string episode)
+		{
+			this.Name = name;
+			this.Season = Convert.ToInt32(season);
+			this.Episode = Convert.ToInt32(episode);
+			this.Title = "";
+		}
+
 		public Series(string name, int season, int episode, string title)
 		{
 			this.Name = name;
 			this.Season = season;
 			this.Episode = episode;
 			this.Title = title;
-		}	
-		
+		}
+
+		public Series(string name, string season, string episode, string title)
+		{
+			this.Name = name;
+			this.Season = Convert.ToInt32(season);
+			this.Episode = Convert.ToInt32(episode);
+			this.Title = title;
+		}
+
 		public Series(string name, int season, int episode, string title, string path)
 		{
 			this.Name = name;
 			this.Season = season;
 			this.Episode = episode;
+			this.Title = title;
+			this.CurrentPath = path;
+		}
+
+		public Series(string name, string season, string episode, string title, string path)
+		{
+			this.Name = name;
+			this.Season = Convert.ToInt32(season);
+			this.Episode = Convert.ToInt32(episode);
 			this.Title = title;
 			this.CurrentPath = path;
 		}
@@ -54,7 +80,17 @@ namespace MoveAndRename
 			this.Extension = extension;
 		}
 
-		public void printSeries()
+		public Series(string name, string season, string episode, string title, string path, string extension)
+		{
+			this.Name = name;
+			this.Season = Convert.ToInt32(season);
+			this.Episode = Convert.ToInt32(episode);
+			this.Title = title;
+			this.CurrentPath = path;
+			this.Extension = extension;
+		}
+
+		public void PrintSeries()
 		{
 			Debug.WriteLine("---Printing series info---");
 			Debug.WriteLine(Name);
