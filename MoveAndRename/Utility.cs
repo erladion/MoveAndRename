@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MoveAndRename
@@ -29,17 +30,34 @@ namespace MoveAndRename
 			}
 		}
 
-
 		/// <summary>
-		/// Parses a user specified format for series names and makes sure it all good.
+		/// Parses a user specified format for series formatting, returns a string that can be used in String.Format()
 		/// </summary>
 		/// <param name="str"></param>
 		/// <returns></returns>
 		public static string ParseSeriesFormat(string str)
 		{
+			// Valid parameters:
+			// Name (name of the series), Episode, Season, Title (name of the episode)
+			string temp = SanitizeString(str);
 
+			if(temp.Length == str.Length)
+			{
+				string[] arr = { "Name", "Episode", "Season", "Title" };
 
-			return "";
+				int i = 0;
+				foreach (var item in arr)
+				{
+					temp = temp.Replace(item, "{" + i + "}");
+					i++;
+				}
+				return temp;
+			}
+			else
+			{
+				return "";
+			}
+			
 		}
 
 		/// <summary>
@@ -89,6 +107,13 @@ namespace MoveAndRename
 			return count;
 		}
 
+		/// <summary>
+		/// Calculates the cosine similarity between two strings. That is how similar they are to each other, will return a value between 0 and 1. Where 1 means the strings are equal. 
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <param name="nGrams"></param>
+		/// <returns></returns>
 		public static double CosineSimilarity(string a, string b, int nGrams)
 		{
 			List<string> aNGrams = CreateNGrams(a, nGrams);
@@ -110,9 +135,7 @@ namespace MoveAndRename
 				dotProduct += (aFreq[i] * bFreq[i]);
 			}
 
-			double magnitudeA = Magnitude(aFreq);
-			double magnitudeB = Magnitude(bFreq);
-			double ret = dotProduct / (magnitudeA * magnitudeB);
+			double ret = dotProduct / (Magnitude(aFreq) * Magnitude(bFreq));
 
 			return ret;
 		}
