@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace MoveAndRename
 {
@@ -25,7 +26,7 @@ namespace MoveAndRename
 		public HashSet<string> includeList = new HashSet<string>();
 		public HashSet<string> destinationList = new HashSet<string>();
 		private List<HashSet<Series>> seriesMatchesSet = new List<HashSet<Series>>();
-		private Tuple<List<string>, List<string>> newSeriesFF;
+		private Tuple<List<string>, List<string>> newSeriesDirectoriesOrFiles;
 		private FileController fc;
 		private TVDB tvdb;
 
@@ -46,7 +47,7 @@ namespace MoveAndRename
 
 			refreshButton.VerticalAlignment = VerticalAlignment.Bottom;
 			listBox.Height = this.Height - 100;
-			setObj.readSettingsFromXml(settingsFilePath);
+			setObj.ReadSettingsFromXml(settingsFilePath);
 
 			setObj.PropertyChanged += SettingsChanged;
 
@@ -65,7 +66,7 @@ namespace MoveAndRename
 							Debug.WriteLine("We are here");
 							// Implement here so that a search is done whenever the argument -r is passed via cmd
 							// Can be used with programs that can run other programs whenever a task is finished
-							newSeriesFF = GetNewSeries();
+							newSeriesDirectoriesOrFiles = GetNewSeries();
 							Debug.WriteLine("1");
 							ShowNewSeriesMatches();
 							Debug.WriteLine("2");
@@ -84,7 +85,7 @@ namespace MoveAndRename
 					}
 					catch (Exception e)
 					{
-						fc.LogMessageToFile(e.ToString());
+						Utility.LogMessageToFile(e.ToString());
 					}					
 				}
 			}
@@ -114,11 +115,18 @@ namespace MoveAndRename
 		[return: MarshalAs(UnmanagedType.Bool)]
 		static extern bool AllocConsole();
 
+		private TVDB CreateTVDBObj()
+		{			
+			TVDB tvdb = new TVDB(setObj.TVDBKey);
+			return tvdb;
+		}
+
 		private void SettingsChanged(object sender, PropertyChangedEventArgs e)
 		{
+			Debug.WriteLine(new StackTrace().GetFrame(1).GetMethod().Name);
 			if (e.PropertyName == "settings")
 			{
-				setObj.writeSettingsToXml(settingsFilePath);
+				setObj.WriteSettingsToXml(settingsFilePath);
 			}
 		}
 
@@ -162,17 +170,41 @@ namespace MoveAndRename
 
 		private void Settings_Click(object sender, RoutedEventArgs e)
 		{
-			setObj.readSettingsFromXml(settingsFilePath);
+			setObj.ReadSettingsFromXml(settingsFilePath);
 			settings = new SettingsWindow(setObj);
 			settings.Show();
 		}
 
 		private void RefreshButton_Click(object sender, RoutedEventArgs e)
 		{
-			newSeriesFF = GetNewSeries();
-			List<string> newSeries = newSeriesFF.Item1;
+			newSeriesDirectoriesOrFiles = GetNewSeries();
+			List<string> newSeries = newSeriesDirectoriesOrFiles.Item1;
 			newSeries = CutPath(newSeries);
 			UpdateListbox(listBox, newSeries);
+		}
+
+		private void Move_Click(object sender, RoutedEventArgs e)
+		{
+			MoveSeriesMatches();
+			UpdateListbox(listBox1, new List<string>());
+			UpdateListbox(listBox, new List<string>());
+			//updateKodiLibrary();
+		}
+
+		private void Button_Click(object sender, RoutedEventArgs e)
+		{
+			ShowNewSeriesMatches();
+		}
+
+		private void RefreshButton_ToolTipOpening(object sender, ToolTipEventArgs e)
+		{
+			Button b = sender as Button;
+			b.ToolTip = "Search for new series episodes or movies in the directores given in settings.";
+		}
+
+		private void Button_ToolTipOpening(object sender, ToolTipEventArgs e)
+		{
+
 		}
 
 		private List<string> CutPath(List<string> l)
@@ -193,7 +225,7 @@ namespace MoveAndRename
 
 		private Tuple<List<string>, List<string>> GetNewSeries()
 		{
-			Debug.WriteLine("-----Currently in GetNewSeries-----");
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
 			HashSet<string> includeList = setObj.IncludeList;
 
 			List<string> newDirectories = new List<string>();
@@ -224,7 +256,7 @@ namespace MoveAndRename
 				}
 				catch (Exception e)
 				{
-					fc.LogMessageToFile(e.ToString());
+					Utility.LogMessageToFile(e.ToString());
 					continue;
 				}
 			}
@@ -239,7 +271,7 @@ namespace MoveAndRename
 		/// <returns></returns>
 		private List<Series> ConvertStringToSeries(List<String> stringList)
 		{
-			Debug.WriteLine("-----Currently in ConvertStringToSeries-----");
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
 			List<Series> res = new List<Series>();
 
 			foreach (var str in stringList)
@@ -281,9 +313,10 @@ namespace MoveAndRename
 		private Series CreateSeriesFromFile(string s)
 		{
 			string path = s.Substring(0, s.Length - 4);
-			string ext = s.Substring(s.Length - 3, 3);
 			string[] splitStr = s.Split('\\');
-			string[] splitN = splitStr[splitStr.Length-1].Split('.');
+			string[] splitN = splitStr.Last().Split('.');
+			string ext = splitN.Last();
+			//string ext = s.Substring(s.Length - 3, 3);
 			string name = "";
 			string season = "";
 			string episode = "";
@@ -301,66 +334,33 @@ namespace MoveAndRename
 			}
 			name.TrimEnd(' ');
 			return new Series(name, Convert.ToInt32(season), Convert.ToInt32(episode), "", path, ext);
+		}       
+
+		private Series CreateSeriesTest(string str)
+		{
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
+
+			string[] s = str.Split('\\');
+
+			string extension = str.Split('.').Last();
+			for (int i = s.Length-1; i >= 0; i--)
+			{
+				string[] t = Regex.Split(s[i], @"S([0-9]+)E([0-9]+)");
+				if(t.Length == 1)
+				{
+					continue;
+				}
+				else
+				{
+					if(((string[])Enum.GetValues(typeof(VideoExtensions))).ToList().Contains(extension))
+					{
+						Series se = new Series(t[0].TrimEnd('.'), t[1], t[2], "", str, extension);
+						return se;
+					}					
+				}
+			}
+			return new Series();
 		}
-
-        private Series RegexMatch(string s)
-        {
-            string[] m = Regex.Split(s, @"S([0-9]+)E([0-9]+)", RegexOptions.IgnoreCase);
-            //Match m = Regex.Match(s, @"S([0-9]+)E([0-9]+)", RegexOptions.IgnoreCase);
-            Debug.WriteLine("In regex match");            
-            Debug.WriteLine(m.Length);
-            for (int i = 0; i < m.Length; i++)
-            {
-                Debug.WriteLine("Part: " + i);
-                Debug.WriteLine("Content: " + m[i]);
-                Debug.WriteLine("-----------------");
-            }
-
-            return new Series(m[0], Convert.ToInt32(m[1]), Convert.ToInt32(m[2]));
-        }
-
-        /// <summary>
-        /// Removes unwanted characters from a string, mainly to be used on strings for paths
-        /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
-        private string SanitizeString(string str)
-        {
-            Debug.WriteLine("Input string: " + str);
-            string retStr = "";
-
-            // Hopefully this covers all needed cases         
-            List<char> unwantedChars = Path.GetInvalidPathChars().ToList();
-            char[] f = Path.GetInvalidFileNameChars();            
-            foreach (var item in f)
-            {
-                if (!unwantedChars.Contains(item))
-                {
-                    unwantedChars.Add(item);
-                }
-            }
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                int count = 0;
-                for (int j = 0; j < unwantedChars.Count; j++)
-                {
-                    if(str[i] == unwantedChars[j])
-                    {
-                        retStr += "";
-                        count++;
-                        break;
-                    }
-                }
-                if(count == 0)
-                {
-                    retStr += str[i];
-                }
-                count = 0;
-            }
-
-            return retStr;
-        }
 
 		/*
 		*
@@ -377,17 +377,11 @@ namespace MoveAndRename
 		/// <returns></returns>
 		private Series CreateSeries(string str)
 		{
-			Debug.WriteLine("-----Currently in CreateSeries-----");
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
 			Debug.WriteLine("Input string: " + str);
 			Series ser;
-			string[] s = str.Split('\\');
-			string[] fileN = s[s.Length - 1].Split('.');
-			string pName = "";
-			for (int i = 0; i < fileN.Length - 1; i++)
-			{
-				pName += fileN[i];
-			}
-			string extension = fileN[fileN.Length - 1];
+			string[] s = str.Split('\\');			
+			string extension = s.Last().Split('.').Last();
 			string name = "";
 			int season = 0;
 			int episode = 0;
@@ -420,7 +414,6 @@ namespace MoveAndRename
 					name += s2[i] + " ";
 				}
 			}
-			name = name.TrimEnd(' ');
 			if (season == 0 || episode == 0)
 			{
 				return new Series();
@@ -430,7 +423,7 @@ namespace MoveAndRename
 				string path = str;
 				Debug.WriteLine("Season: " + season);
 				Debug.WriteLine("Episode: " + episode);
-				ser = new Series(name, season, episode, "", path, extension);
+				ser = new Series(name.TrimEnd(' '), season, episode, "", path, extension);
 			}
 			return ser;
 		}
@@ -443,7 +436,7 @@ namespace MoveAndRename
 		/// </param>
 		private HashSet<Series> FindMatch(TVDB obj, Series series)
 		{
-			Debug.WriteLine("-----Currently in FindMatch-----");
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
 			HashSet<Series> hs = new HashSet<Series>(new SeriesComparer());
 
 			var results = obj.Search(series.Name);
@@ -482,16 +475,6 @@ namespace MoveAndRename
 		*	Taken - 1x02 - Random name.mp4
 		*/
 
-		/// <summary>
-		/// Small object which is used when matching a series name with a directory.
-		/// </summary>
-		struct DestObj
-		{
-			public int count;
-			public string str;
-			public string path;
-		}
-
         private Tuple<string, double> FindBestStringMatch(List<string> list, string str)
         {
             list.Sort();
@@ -528,7 +511,7 @@ namespace MoveAndRename
                 {
                     if (item.GetChanged().Contains(it.ToLower()))
                     {
-                        var cosineCost = CosineSimilarity(item.GetChanged().Replace(it.ToLower(), ""), str.ToLower(), 2);
+                        var cosineCost = Utility.CosineSimilarity(item.GetChanged().Replace(it.ToLower(), ""), str.ToLower(), 2);
                         item.SetCost(cosineCost);
                     }
                 }
@@ -577,7 +560,6 @@ namespace MoveAndRename
         {
             public int Compare(StringCostObj a, StringCostObj b)
             {
-
                 if (a.GetCost() == b.GetCost())
                 {
                     return 0;
@@ -589,79 +571,9 @@ namespace MoveAndRename
                 else
                 {
                     return 1;
-                }
-                
+                }                
             }
-        }
-
-        private List<string> CreateNGrams(string str, int n)
-        {
-            if (n > str.Length)
-            {
-                return new List<string>();
-            }
-
-            List<string> nGrams = new List<string>();
-
-            for (int i = 0; i < str.Length-n+1; i++)
-            {
-                string s = str.Substring(i, n);
-                nGrams.Add(s);
-            }
-
-            return nGrams;
-        }
-
-        private double CosineSimilarity(string a, string b, int nGrams)
-        {
-            List<string> aNGrams = CreateNGrams(a, nGrams);
-            List<string> bNGrams = CreateNGrams(b, nGrams);           
-
-            List<string> abGrams = aNGrams.Union(bNGrams).ToList();
-
-            List<int> aFreq = Enumerable.Repeat(0, abGrams.Count).ToList();
-            List<int> bFreq = Enumerable.Repeat(0, abGrams.Count).ToList();
-            for (int i = 0; i < abGrams.Count; i++)
-            {
-                aFreq[i] = CountStringOccurences(a, abGrams[i]);
-                bFreq[i] = CountStringOccurences(b, abGrams[i]);
-            }
-
-            double dotProduct = 0;
-            for (int i = 0; i < aFreq.Count; i++)
-            {
-                dotProduct += (aFreq[i] * bFreq[i]);
-            }
-            
-            double magnitudeA = Magnitude(aFreq);
-            double magnitudeB = Magnitude(bFreq);
-            double ret = dotProduct / (magnitudeA * magnitudeB);
-            
-            return ret;
-        }
-
-        private double Magnitude(List<int> li)
-        {
-            double magnitude = 0;
-            for (int i = 0; i < li.Count; i++)
-            {
-                magnitude += li[i] * li[i];
-            }
-
-            return Math.Sqrt(magnitude);
-        }
-
-        private int CountStringOccurences(string s, string p)
-        {
-            int count = 0;
-            int i = 0;
-            while ((i = s.IndexOf(p, i)) != -1)
-            {
-                i += p.Length;
-                count++;
-            }
-            return count;
-        }
+        }                
 
         /// <summary>
         /// Goes through all the destinationlist subdirectories and checks if any of them match the series name, and returns the one with the best match.
@@ -671,7 +583,6 @@ namespace MoveAndRename
         private string GetDestinationPath(Series ser)
 		{
 			List<string> possibleDirectories = new List<string>();
-			List<DestObj> de = new List<DestObj>();
 			Debug.WriteLine(setObj.DestinationList.Count);
             string bestMatch = "";
 
@@ -699,28 +610,6 @@ namespace MoveAndRename
 				}
 			}             
             return bestMatch;
-		}
-
-		/// <summary>
-		/// Comparer class for DestObj
-		/// </summary>
-		private class DestObjComparer : IComparer<DestObj>
-		{
-			public int Compare(DestObj a, DestObj b)
-			{
-				if (a.count < b.count)
-				{
-					return 1;
-				}
-				else if (a.count > b.count)
-				{
-					return -1;
-				}
-				else
-				{
-					return 0;
-				}
-			}
 		}
 
 		/// <summary>
@@ -775,9 +664,35 @@ namespace MoveAndRename
 					}
 				}
 			}
-
 			return path;
-		}		
+		}
+
+		private class Language
+		{
+			public string Value { get; set; }
+			private Language(string value) { Value = value; }
+
+			public Language()
+			{
+			}
+
+			public static Language English { get { return new Language("eng"); } }
+
+			public static string Swedish => "swe";
+		}
+
+		private string GetBestMatchingSubFile(List<string> l, string mainLang)
+		{
+			Language lan = new Language();
+
+			PropertyInfo[] properties = typeof(Language).GetProperties();
+			foreach (PropertyInfo property in properties)
+			{
+				Debug.WriteLine(property.Name);
+			}
+
+			return "";
+		}
 
 		private void ShowMatches(HashSet<Series> seriesSet)
 		{
@@ -787,10 +702,6 @@ namespace MoveAndRename
 			{
 				seasonNumber = (ser.Season < 10 ? "0" + ser.Season : ser.Season.ToString());
 				episodeNumber = (ser.Season < 10 ? "0" + ser.Episode : ser.Episode.ToString());
-
-				Debug.WriteLine("Showing currently printed information in right listbox");
-				Debug.WriteLine(seasonNumber);
-				Debug.WriteLine(episodeNumber);
 
 				TreeView root = new TreeView();
 				TreeViewItem tvi = new TreeViewItem
@@ -818,20 +729,18 @@ namespace MoveAndRename
         */
 		private void ShowNewSeriesMatches()
 		{
-			//Tuple<List<string>, List<string>> t = GetNewSeries();
-
-			List<string> ls = newSeriesFF.Item1;
+			List<string> ls = newSeriesDirectoriesOrFiles.Item1;
 			List<string> filesInDir = new List<string>();
 			for (int i = 0; i < ls.Count; i++)
 			{
 				filesInDir.AddRange(fc.GetFilesInDir(ls[i]));
 			}
 
-			ls.AddRange(newSeriesFF.Item2);
+			ls.AddRange(newSeriesDirectoriesOrFiles.Item2);
 
 			UpdateListbox(listBox1, CutPath(ls));
 			List<Series> s = ConvertStringToSeries(filesInDir);
-			List<Series> u = ConvertFileToSeries(newSeriesFF.Item2);
+			List<Series> u = ConvertFileToSeries(newSeriesDirectoriesOrFiles.Item2);
 			Debug.WriteLine(u.Count);
 
 			s.AddRange(u);
@@ -839,7 +748,7 @@ namespace MoveAndRename
 			// Test to add subtitle path to the series object
 			foreach (var ser in s)
 			{
-				ser.printSeries();
+				ser.PrintSeries();
 
 				// Count how many chars there are after the last "\"
 				int charsToRemove = 0;
@@ -874,7 +783,7 @@ namespace MoveAndRename
 					Debug.WriteLine(i);
 				}
 
-				ser.printSeries();
+				ser.PrintSeries();
 			}
 
 			List<HashSet<Series>> lh = new List<HashSet<Series>>();
@@ -920,7 +829,7 @@ namespace MoveAndRename
 					Debug.WriteLine("Before move file");
 					foreach (var item in set)
 					{
-						item.printSeries();
+						item.PrintSeries();
 					}
 					ShowMatches(set);
 				}                
@@ -931,10 +840,10 @@ namespace MoveAndRename
 		{
 			Debug.WriteLine("------Before getting destination path------");
 			string destinationPath = GetDestinationPath(s);
+			// We got no current folder for the series, so we create one.
 			if (destinationPath.Length == 0)
 			{
-				Debug.WriteLine("No folder exists for the series, so we create one");
-				// We got no current folder for the series, so we create one.
+				Debug.WriteLine("No folder exists for the series, so we create one");				
 				if (setObj.DestinationList.Count > 1)
 				{
 					ChoiceWindow cw = new ChoiceWindow(setObj.DestinationList);
@@ -945,23 +854,22 @@ namespace MoveAndRename
 				{
 					destinationPath = setObj.DestinationList.First();
 				}
-				s.Name = SanitizeString(s.Name);
+				s.Name = Utility.SanitizeString(s.Name);
 				destinationPath += '\\' + s.Name;
 				Debug.WriteLine("Folder name after creation: " + destinationPath);
 			}
 			Debug.WriteLine("Current destination path: " + destinationPath);
-			destinationPath += '\\' + "Season " + s.Season;
+			destinationPath += "\\Season " + s.Season;
 			Debug.WriteLine("Current destination path: " + destinationPath);
-			s.Name = s.Name.Trim(' ');
 
-			string printingEpisode = (s.Episode < 10 ? "0" + s.Episode.ToString() : s.Episode.ToString());
-
-			s.Name = SanitizeString(s.Name);
-			s.Title = SanitizeString(s.Title);
+			s.Name = Utility.SanitizeString(s.Name.Trim(' '));
+			s.Title = Utility.SanitizeString(s.Title);
 
 			Debug.WriteLine("Series title: " + s.Title);
 
-			destinationPath += '\\' + s.Name + " - " + s.Season + (s.Episode < 10 ? "x0" : "x") + s.Episode + " - " + s.Title + "." + s.Extension;
+			destinationPath += String.Format("\\{0} - {1}{2} - {3}.{4}", s.Name, s.Season, (s.Episode < 10 ? "x0" : "x") + s.Episode, s.Title, s.Extension);
+
+			//destinationPath += '\\' + s.Name + " - " + s.Season + (s.Episode < 10 ? "x0" : "x") + s.Episode + " - " + s.Title + "." + s.Extension;
 
 			s.DestinationPath = destinationPath;
 		}
@@ -972,41 +880,26 @@ namespace MoveAndRename
 			{
 				fc.MoveFile(item);
 			}
-		}
+		}		
 
-		private TVDB CreateTVDBObj()
+		private void Test_Click(object sender, RoutedEventArgs e)
 		{
-			TVDB tvdb = new TVDB("0B4DFD2EB324D53C");
-			return tvdb;
+			Utility.ParseSeriesFormat("Name - Episode . Season Title - Name - Name.txt");
+
+			Debug.WriteLine("------Testing------");
+
+			string str1 = "Q:\\TestFiles\\Quantico.S01E02.randomstuff\\Quantico.S01E02.randomstuff.mp4";
+			
+			Debug.WriteLine(String.Format("Current string: {0}", str1));
+			//Series a = CreateSeriesTest(str1);
+			//a.PrintSeries();
+
+			Series s = CreateSeries(str1);
+			s.PrintSeries();
 		}
+	}
 
-		private void Move_Click(object sender, RoutedEventArgs e)
-		{
-			MoveSeriesMatches();
-			UpdateListbox(listBox1, new List<string>());
-			UpdateListbox(listBox, new List<string>());
-			//updateKodiLibrary();
-		}
-
-		private void Button_Click(object sender, RoutedEventArgs e)
-		{
-			ShowNewSeriesMatches();
-		}
-
-		private void RefreshButton_ToolTipOpening(object sender, ToolTipEventArgs e)
-		{
-			Button b = sender as Button;
-			b.ToolTip = "Search for new series episodes or movies in the directores given in settings.";
-		}
-
-		private void Button_ToolTipOpening(object sender, ToolTipEventArgs e)
-		{
-
-		}
-
-    }
-
-    class SeriesComparer : IEqualityComparer<Series>
+	class SeriesComparer : IEqualityComparer<Series>
 	{
 		public bool Equals(Series a, Series b)
 		{

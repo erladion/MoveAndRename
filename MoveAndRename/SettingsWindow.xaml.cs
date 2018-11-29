@@ -9,7 +9,9 @@ namespace MoveAndRename
 	enum ESettings
 	{
 		Paths,
-		Filetypes
+		Filetypes,
+		ApiKeys,
+		CustomFormat
 	}
 	enum Paths
 	{
@@ -21,6 +23,12 @@ namespace MoveAndRename
 	{
 		Episode,
 		Subtitle
+	}
+
+	enum ApiKeys
+	{
+		TVDB,
+		MovieDB
 	}
 
 	enum VideoExtensions
@@ -50,11 +58,13 @@ namespace MoveAndRename
 		{			
 			settingsHeight = this.Height;
 			settingsWidth = this.Width;
-			InitializeComponent();			
+			InitializeComponent();
 
 			treeView.Height = this.Height - 60;
-			TreeViewItem tvi = new TreeViewItem();
-			tvi.Header = ESettings.Paths;
+			TreeViewItem tvi = new TreeViewItem
+			{
+				Header = ESettings.Paths
+			};
 			List<Paths> p = new List<Paths>();
 			foreach (Paths item in Enum.GetValues(typeof(Paths)))
 			{
@@ -63,8 +73,10 @@ namespace MoveAndRename
 			tvi.ItemsSource = p;
 			treeView.Items.Add(tvi);
 
-			TreeViewItem tvft = new TreeViewItem();
-			tvft.Header = ESettings.Filetypes;
+			TreeViewItem tvft = new TreeViewItem
+			{
+				Header = ESettings.Filetypes
+			};
 			List<FileTypes> ft = new List<FileTypes>();
 			foreach (FileTypes item in Enum.GetValues(typeof(FileTypes)))
 			{
@@ -73,6 +85,24 @@ namespace MoveAndRename
 			tvft.ItemsSource = ft;
 			treeView.Items.Add(tvft);
 
+			List<ApiKeys> ak = new List<ApiKeys>();
+			TreeViewItem tvak = new TreeViewItem
+			{
+				Header = ESettings.ApiKeys
+			};
+			foreach (ApiKeys item in Enum.GetValues(typeof(ApiKeys)))
+			{
+				ak.Add(item);
+			}
+			tvak.ItemsSource = ak;
+			treeView.Items.Add(tvak);
+
+			TreeViewItem tvc = new TreeViewItem
+			{
+				Header = ESettings.CustomFormat
+			};
+			tvc.ItemsSource = new List<ESettings>() { ESettings.CustomFormat };
+			treeView.Items.Add(tvc);
 
 			settingsObj = settingsObject;
 			this.MinHeight = 400;
@@ -91,60 +121,170 @@ namespace MoveAndRename
 			lb.Height = settingsHeight * 0.63;
 		}
 
-		private void addPathsControls()
+		private void AddPathsControls()
 		{
 			Content.Children.Clear();
 
-			lb = new ListBox();
-			lb.Height = settingsHeight - 150;
-			lb.Width = settingsWidth * 0.55;
-			lb.VerticalAlignment = VerticalAlignment.Top;
-			lb.HorizontalAlignment = HorizontalAlignment.Right;
+			lb = new ListBox
+			{
+				Height = settingsHeight - 150,
+				Width = settingsWidth * 0.55,
+				VerticalAlignment = VerticalAlignment.Top,
+				HorizontalAlignment = HorizontalAlignment.Right
+			};
 			Content.Children.Add(lb);
 
-			Button add = new Button();
-			add.Content = "Add";
-			add.Height = 20;
-			add.Width = 75;
-			add.HorizontalAlignment = HorizontalAlignment.Left;
-			add.VerticalAlignment = VerticalAlignment.Bottom;
-			add.Margin = new Thickness(0, 0, 0, 0);
+			Button add = new Button
+			{
+				Content = "Add",
+				Height = 20,
+				Width = 75,
+				HorizontalAlignment = HorizontalAlignment.Left,
+				VerticalAlignment = VerticalAlignment.Bottom,
+				Margin = new Thickness(0, 0, 0, 0)
+			};
 
-			add.Click += new RoutedEventHandler(add_Click);
+			add.Click += new RoutedEventHandler(Add_Click);
 			Content.Children.Add(add);
-			
-			Button remove = new Button();
-			remove.Content = "Remove";
-			remove.Height = 20;
-			remove.Width = 75;
-			remove.VerticalAlignment = VerticalAlignment.Bottom;
-			remove.HorizontalAlignment = HorizontalAlignment.Left;
-			remove.Margin = new Thickness(add.Width+5, 0, 0, 0);			
 
-			remove.Click += new RoutedEventHandler(remove_Click);
+			Button remove = new Button
+			{
+				Content = "Remove",
+				Height = 20,
+				Width = 75,
+				VerticalAlignment = VerticalAlignment.Bottom,
+				HorizontalAlignment = HorizontalAlignment.Left,
+				Margin = new Thickness(add.Width + 5, 0, 0, 0)
+			};
+			remove.Click += new RoutedEventHandler(Remove_Click);
 			Content.Children.Add(remove);			
 		}
 
-		private void addFileTypesControls(object sender)
+		private void AddFileTypesControls(object sender)
 		{
 			Content.Children.Clear();
 			Content.VerticalAlignment = VerticalAlignment.Top;
-			TextBlock tb = new TextBlock();
-			tb.Measure(new Size());
-			tb.Arrange(new Rect());
+			TextBlock tb = new TextBlock();			
 			tb.Text = "Check this to include " + sender.ToString() + " in the search space";
-			tb.TextWrapping = TextWrapping.WrapWithOverflow;
+			tb.TextWrapping = TextWrapping.WrapWithOverflow;			
+			tb.Measure(new Size());
+			tb.Arrange(new Rect());			
 			Content.Children.Add(tb);
 
-			CheckBox cb = new CheckBox();
 			double tbH = tb.ActualHeight;
-			cb.Margin = new Thickness(0, tbH + 20, 0, 0);
-			cb.HorizontalAlignment = HorizontalAlignment.Left;
+			CheckBox cb = new CheckBox
+			{
+				Margin = new Thickness(0, tbH + 20, 0, 0),
+				HorizontalAlignment = HorizontalAlignment.Left,
+				Name = sender.ToString(),
+				IsChecked = settingsObj.IncludeSubtitle
+			};
 			cb.Unchecked += Cb_Unchecked;
 			cb.Checked += Cb_Checked;
-            cb.IsChecked = settingsObj.IncludeSubtitle;
-            cb.Name = sender.ToString();
+            
 			Content.Children.Add(cb);
+		}
+
+		private void AddAPIKeyControls(string s)
+		{ 
+			Content.Children.Clear();
+
+			Grid g = new Grid();
+			TextBlock t = new TextBlock
+			{
+				Margin = new Thickness(5, 5, 0, 0),
+				Text = s + " key",
+				VerticalAlignment = VerticalAlignment.Top
+			};
+			t.Measure(new Size());
+			t.Arrange(new Rect());
+
+			TextBox tb = new TextBox
+			{
+				Height = 20,
+				Width = 150,
+				VerticalAlignment = VerticalAlignment.Top,
+				Margin = new Thickness(5, 20, 0, 0),
+				HorizontalAlignment = HorizontalAlignment.Left,
+				Text = (s == "TVDB" ? settingsObj.TVDBKey : settingsObj.MovieDBKey)
+			};
+
+			Button b = new Button
+			{
+				Width = 75,
+				Height = 20,
+				Margin = new Thickness(0, 20, 5, 0),
+				VerticalAlignment = VerticalAlignment.Top,
+				HorizontalAlignment = HorizontalAlignment.Right,
+				Content = "Update"
+			};
+			b.Click += (sender, EventArgs) => { Update_Click(sender, EventArgs, tb.Text, s); };
+
+			g.Children.Add(t);
+			g.Children.Add(tb);
+			g.Children.Add(b);
+			Content.Children.Add(g);
+		}
+
+		private void AddFormatControls()
+		{
+			Content.Children.Clear();
+
+			Grid g = new Grid();
+			TextBlock t = new TextBlock
+			{
+				Margin = new Thickness(5, 5, 0, 0),
+				Text = "Series format",
+				VerticalAlignment = VerticalAlignment.Top
+			};
+			t.Measure(new Size());
+			t.Arrange(new Rect());
+
+			TextBox tb = new TextBox
+			{
+				Height = 20,
+				Width = 150,
+				VerticalAlignment = VerticalAlignment.Top,
+				Margin = new Thickness(5, 20, 0, 0),
+				HorizontalAlignment = HorizontalAlignment.Left,
+				Text = ((settingsObj.CustomFormat == "") || (settingsObj.CustomFormat == null) ? "" : settingsObj.CustomFormat)
+			};
+
+			Button b = new Button
+			{
+				Width = 75,
+				Height = 20,
+				Margin = new Thickness(0, 20, 5, 0),
+				VerticalAlignment = VerticalAlignment.Top,
+				HorizontalAlignment = HorizontalAlignment.Right,
+				Content = "Set"
+			};
+			b.Click += (sender, EventArgs) => { SetFormat_Click(sender, EventArgs, tb.Text); };
+
+			TextBlock workingKeyWords = new TextBlock
+			{
+				Margin = new Thickness(5, 30, 0, 0),
+				Text = "Working keywords: Name (name of the series), Season, Episode (episode number), Title (name of the episode)",
+				TextWrapping = TextWrapping.WrapWithOverflow,
+				VerticalAlignment = VerticalAlignment.Top
+			};
+			workingKeyWords.Measure(new Size());
+			workingKeyWords.Arrange(new Rect());
+
+			TextBlock illegalCharacters = new TextBlock
+			{
+				Margin = new Thickness(5, 40, 0, 0),
+				Text = @"Illegal characters (will be removed): <,>,\,/",
+				TextWrapping = TextWrapping.WrapWithOverflow,
+				VerticalAlignment = VerticalAlignment.Top				
+			};
+			illegalCharacters.Measure(new Size());
+			illegalCharacters.Arrange(new Rect());
+
+			g.Children.Add(t);
+			g.Children.Add(tb);
+			g.Children.Add(b);
+			Content.Children.Add(g);
 		}
 
 		private void Cb_Unchecked(object sender, RoutedEventArgs e)
@@ -167,7 +307,18 @@ namespace MoveAndRename
             }
 		}
 
-		private void remove_Click(object sender, EventArgs e)
+		private void Update_Click(object sender, EventArgs e, string key, string type)
+		{
+			//settingsObj.UpdateAPIKey();
+			settingsObj.UpdateTVDBKey(key);
+		}
+
+		private void SetFormat_Click(object sender, EventArgs e, string format)
+		{
+			settingsObj.SetCustomFormat(Utility.ParseSeriesFormat(format));
+		}
+
+		private void Remove_Click(object sender, EventArgs e)
 		{
 			Paths p = (Paths)treeView.SelectedItem;
 			string path = "";
@@ -184,22 +335,22 @@ namespace MoveAndRename
 			{
 				case Paths.Include:
 					settingsObj.RemoveInclude(path);
-					updateListbox(lb, settingsObj.IncludeList);
+					UpdateListbox(lb, settingsObj.IncludeList);
 					break;
 				case Paths.Exclude:
 					settingsObj.RemoveExclude(path);
-					updateListbox(lb, settingsObj.ExcludeList);
+					UpdateListbox(lb, settingsObj.ExcludeList);
 					break;
 				case Paths.Destinations:
 					settingsObj.RemoveDestination(path);
-					updateListbox(lb, settingsObj.DestinationList);
+					UpdateListbox(lb, settingsObj.DestinationList);
 					break;
 				default:
 					break;
 			}
 		}
 
-		private void add_Click(object sender, EventArgs e)
+		private void Add_Click(object sender, EventArgs e)
 		{
 			// Opens a dialog window for the user to be able to choose folders, the selected folders path is saved in path and added to the correct set of data.
 			var dialog = new System.Windows.Forms.FolderBrowserDialog();
@@ -212,49 +363,58 @@ namespace MoveAndRename
 			{
 				case Paths.Include:					
 					settingsObj.AddInclude(path);					
-					updateListbox(lb, settingsObj.IncludeList);
+					UpdateListbox(lb, settingsObj.IncludeList);
 					break;
 				case Paths.Exclude:
 					settingsObj.AddExclude(path);					
-					updateListbox(lb, settingsObj.ExcludeList);
+					UpdateListbox(lb, settingsObj.ExcludeList);
 					break;
 				case Paths.Destinations:
 					settingsObj.AddDestination(path);
-					updateListbox(lb, settingsObj.DestinationList);
+					UpdateListbox(lb, settingsObj.DestinationList);
 					break;
 				default:
 					break;
 			}				
 		}
 
-		private void treeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+		private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			if (treeView.SelectedItem.ToString() == Paths.Include.ToString())
+			switch (treeView.SelectedItem.ToString())
 			{
-				addPathsControls();
-				updateListbox(lb, settingsObj.IncludeList);
+				case nameof(Paths.Include):
+					AddPathsControls();
+					UpdateListbox(lb, settingsObj.IncludeList);
+					break;
+				case nameof(Paths.Exclude):
+					AddPathsControls();
+					UpdateListbox(lb, settingsObj.ExcludeList);
+					break;
+				case nameof(Paths.Destinations):
+					AddPathsControls();
+					UpdateListbox(lb, settingsObj.DestinationList);
+					break;
+				case nameof(FileTypes.Episode):
+					AddFileTypesControls(treeView.SelectedItem);
+					break;
+				case nameof(FileTypes.Subtitle):
+					AddFileTypesControls(treeView.SelectedItem);
+					break;
+				case nameof(ApiKeys.TVDB):
+					AddAPIKeyControls("TVDB");
+					break;
+				case nameof(ApiKeys.MovieDB):
+					AddAPIKeyControls("MovieDB");
+					break;
+				case nameof(ESettings.CustomFormat):
+					AddFormatControls();
+					break;
+				default:
+					break;
 			}
-			else if (treeView.SelectedItem.ToString() == Paths.Exclude.ToString())
-			{
-				addPathsControls();
-				updateListbox(lb, settingsObj.ExcludeList);
-			}
-			else if(treeView.SelectedItem.ToString() == Paths.Destinations.ToString())
-			{
-				addPathsControls();
-				updateListbox(lb, settingsObj.DestinationList);
-			}
-			else if(treeView.SelectedItem.ToString() == FileTypes.Episode.ToString())
-			{
-				addFileTypesControls(treeView.SelectedItem);
-			}
-            else if (treeView.SelectedItem.ToString() == FileTypes.Subtitle.ToString())
-            {
-                addFileTypesControls(treeView.SelectedItem);
-            }
 		}			
 		
-		private void updateListbox(ListBox lb, HashSet<string> data)
+		private void UpdateListbox(ListBox lb, HashSet<string> data)
 		{
 			lb.ItemsSource = null;
 			lb.ItemsSource = data;

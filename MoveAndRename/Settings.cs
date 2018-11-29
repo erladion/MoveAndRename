@@ -18,6 +18,9 @@ namespace MoveAndRename
 		private bool includeNfo = false;
 		private bool includeSubtitle = true;
 		private HashSet<string> subtitleTypes;
+		private string tvdbKey;
+		private string movieDBKey;
+		private string customFormat;
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
@@ -30,13 +33,10 @@ namespace MoveAndRename
 
 		private void OnPropertyChanged(string property)
 		{
-			if(PropertyChanged != null)
-			{
-				PropertyChanged(this, new PropertyChangedEventArgs(property));
-			}
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
 		}
 
-		public void writeFiletypesToXml(string filename)
+		public void WriteFiletypesToXml(string filename)
 		{
 			Debug.WriteLine("Writing filetype settings to XML");
 			XDocument doc = XDocument.Load("settings.xml");
@@ -49,7 +49,30 @@ namespace MoveAndRename
 			doc.Save(filename);
 		}
 
-		public void writeSettingsToXml(string filename)
+		private XElement FormatSettings()
+		{
+			XElement format = new XElement("Format");
+			XElement seriesFormat = new XElement("Series");
+			seriesFormat.SetAttributeValue("value", customFormat);
+			format.Add(seriesFormat);
+
+			return format;
+		}
+
+		private XElement APIKeysSettings()
+		{
+			XElement apikeys = new XElement(ESettings.ApiKeys.ToString());
+			XElement tvdbkey = new XElement(ApiKeys.TVDB.ToString());
+			tvdbkey.SetAttributeValue("value", tvdbKey);
+			XElement moviedbkey = new XElement(ApiKeys.MovieDB.ToString());
+			moviedbkey.SetAttributeValue("value", movieDBKey);
+			apikeys.Add(tvdbkey);
+			apikeys.Add(moviedbkey);
+
+			return apikeys;
+		}
+
+		public void WriteSettingsToXml(string filename)
 		{
 			Debug.WriteLine("Writing settings to XML");
 			XElement dests = new XElement(Paths.Destinations.ToString());
@@ -81,61 +104,83 @@ namespace MoveAndRename
 				Debug.WriteLine("Adding: " + item.ToString() + " to exclude");
 				exclude.Add(p);
 			}
-			
+
 			XElement paths = new XElement(ESettings.Paths.ToString());
 			paths.Add(include);
 			paths.Add(exclude);
 			paths.Add(dests);
 
-            XElement filetypes = new XElement(ESettings.Filetypes.ToString());
-            XElement subtitles = new XElement(FileTypes.Subtitle.ToString());
-            subtitles.SetAttributeValue("value", includeSubtitle);
+			XElement filetypes = new XElement(ESettings.Filetypes.ToString());
+			XElement subtitles = new XElement(FileTypes.Subtitle.ToString());
+			subtitles.SetAttributeValue("value", includeSubtitle);
+			filetypes.Add(subtitles);
 
-            filetypes.Add(subtitles);
-			
 			XElement settings = new XElement("Settings");
 			settings.Add(paths);
-            settings.Add(filetypes);
+			settings.Add(filetypes);
+			settings.Add(APIKeysSettings());
+			settings.Add(FormatSettings());
 
 			XDocument doc = new XDocument();
 			doc.Add(settings);
 			doc.Save(filename);
 		}
 
-		public void readSettingsFromXml(string filename)
+		public void ReadSettingsFromXml(string filename)
 		{
 			Debug.WriteLine("Reading settings from XML");
-            try
-            {
-                XDocument doc = XDocument.Load("settings.xml");
+			try
+			{
+				XDocument doc = XDocument.Load("settings.xml");
 
-                foreach (var path in doc.Descendants(Paths.Exclude.ToString()).Elements("Path"))
-                {
-                    string str = path.Attribute("value").Value;
-                    AddExclude(str);
-                }
+				foreach (var path in doc.Descendants(Paths.Exclude.ToString()).Elements("Path"))
+				{
+					string str = path.Attribute("value").Value;
+					AddExclude(str);
+				}
 
-                foreach (var path in doc.Descendants(Paths.Include.ToString()).Elements("Path"))
-                {
-                    string str = path.Attribute("value").Value;
-                    AddInclude(str);
-                }
+				foreach (var path in doc.Descendants(Paths.Include.ToString()).Elements("Path"))
+				{
+					string str = path.Attribute("value").Value;
+					AddInclude(str);
+				}
 
-                foreach (var path in doc.Descendants(Paths.Destinations.ToString()).Elements("Path"))
-                {
-                    string str = path.Attribute("value").Value;
-                    AddDestination(str);
-                }
+				foreach (var path in doc.Descendants(Paths.Destinations.ToString()).Elements("Path"))
+				{
+					string str = path.Attribute("value").Value;
+					AddDestination(str);
+				}
 
-                // TODO Make it so we read the settings about Subtitles etc here
-            }
-            catch (FileNotFoundException e)
-            {
-                Debug.WriteLine("Settings file not found");
-                var f = File.Create("settings.xml");
-                f.Close();
-                writeSettingsToXml("settings.xml");
-            }			
+				foreach (var item in doc.Descendants(ESettings.ApiKeys.ToString()).Elements("TVDB"))
+				{
+					string str = item.Attribute("value").Value;
+					SetTVDBKey(str);
+				}
+
+				foreach (var item in doc.Descendants(ESettings.ApiKeys.ToString()).Elements("MovieDB"))
+				{
+					try
+					{
+						string str = item.Attribute("value").Value;
+						SetMovieDBKey(str);
+					}
+					catch (Exception)
+					{
+						Utility.LogMessageToFile("No MovieDB key value");
+						throw;
+					}
+				}
+				// TODO Make it so we read the settings about Subtitles etc here
+			}
+			catch (FileNotFoundException e)
+			{
+				Utility.LogMessageToFile(e.ToString());
+				Utility.LogMessageToFile("Settings file not found");
+				Debug.WriteLine("Settings file not found");
+				var f = File.Create("settings.xml");
+				f.Close();
+				WriteSettingsToXml("settings.xml");
+			}
 		}
 
 		public void AddInclude(string str)
@@ -221,6 +266,50 @@ namespace MoveAndRename
 			OnPropertyChanged("settings");
 		}
 
+		public void UpdateAPIKey(string key, string type)
+		{
+			if (type == "TVDB")
+			{
+				UpdateTVDBKey(key);
+			}
+			else if (type == "MovieDB")
+			{
+				UpdateMovieDBKey(key);
+			}
+		}
+
+		// Only used internally to not call the propertychanged method
+		private void SetTVDBKey(string key) => tvdbKey = key;
+
+		// Only used internally to not call the propertychanged method
+		private void SetMovieDBKey(string key) => movieDBKey = key;
+
+		public void UpdateTVDBKey(string key)
+		{
+			tvdbKey = key;
+			OnPropertyChanged("settings");
+		}
+
+		public void UpdateMovieDBKey(string key)
+		{
+			movieDBKey = key;
+			OnPropertyChanged("settings");
+		}
+
+		public void SetCustomFormat(string format)
+		{
+			customFormat = format;
+			OnPropertyChanged("settings");
+		}
+
+		public string CustomFormat
+		{
+			get
+			{
+				return customFormat;
+			}	
+		}
+
 		public HashSet<string> IncludeList
 		{
 			get
@@ -258,6 +347,22 @@ namespace MoveAndRename
 			get
 			{
 				return includeSubtitle;
+			}
+		}
+
+		public string TVDBKey
+		{
+			get
+			{
+				return tvdbKey;
+			}
+		}
+
+		public string MovieDBKey
+		{
+			get
+			{
+				return movieDBKey;
 			}
 		}
 	}
