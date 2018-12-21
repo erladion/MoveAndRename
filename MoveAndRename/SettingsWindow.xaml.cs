@@ -165,16 +165,20 @@ namespace MoveAndRename
 		{
 			Grid g = new Grid();
 			Content.VerticalAlignment = VerticalAlignment.Top;
-			TextBlock tb = new TextBlock();			
-			tb.Text = "Check this to include " + sender.ToString() + " in the search space";
-			tb.TextWrapping = TextWrapping.WrapWithOverflow;			
+			TextBlock tb = new TextBlock()
+			{
+				Margin = new Thickness(0, 5, 0, 0),
+				Text = "Check this to include " + sender.ToString() + " in the search space",
+				TextWrapping = TextWrapping.WrapWithOverflow,
+			};
 			tb.Measure(new Size());
 			tb.Arrange(new Rect());			
 
 			double tbH = tb.ActualHeight;
+
 			CheckBox cb = new CheckBox
 			{
-				Margin = new Thickness(0, tbH + 20, 0, 0),
+				Margin = new Thickness(0, tbH/5 + 10, 0, 0),
 				HorizontalAlignment = HorizontalAlignment.Left,
 				Name = sender.ToString(),
 				IsChecked = settingsObj.IncludeSubtitle
@@ -184,6 +188,23 @@ namespace MoveAndRename
 
 			g.Children.Add(tb);
 			g.Children.Add(cb);
+
+			double cbH = cb.ActualHeight;
+			if (sender.ToString() == "Subtitle")
+			{
+				TextBox t = new TextBox()
+				{
+					Margin = new Thickness(0, tbH/5 + 10 + cbH + 20, 0,0)
+				};
+				string baseLang = "eng";
+				t.Text += "Currently set standard language: " + baseLang;
+				t.Text += "\n";
+				foreach (var item in settingsObj.GetLanguages())
+				{
+					t.Text += item + ",";
+				}
+				g.Children.Add(t);
+			}
 
 			return g;
 		}

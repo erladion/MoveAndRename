@@ -21,6 +21,7 @@ namespace MoveAndRename
 		private string tvdbKey;
 		private string tmdbKey;
 		private string customFormat;
+		private List<string> addedSubLanguages;
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
@@ -29,6 +30,9 @@ namespace MoveAndRename
 			includeList = new HashSet<string>();
 			excludeList = new HashSet<string>();
 			destinationList = new HashSet<string>();
+
+			string[] baseLanguages = {"swe", "eng", "esp", "rus"};
+			addedSubLanguages = new List<string>(baseLanguages);
 		}
 
 		private void OnPropertyChanged(string property)
@@ -308,6 +312,16 @@ namespace MoveAndRename
 			OnPropertyChanged("settings");
 		}
 
+		public void AddLangauge(string str)
+		{
+			// All abbreviations for languages are of size 3 (ISO 639-2)
+			if(str.Length == 3)
+			{
+				addedSubLanguages.Add(str);
+				OnPropertyChanged("settings");
+			}
+		}
+
 		public string CustomFormat
 		{
 			get
@@ -370,6 +384,11 @@ namespace MoveAndRename
 			{
 				return tmdbKey;
 			}
+		}
+
+		public List<string> GetLanguages()
+		{
+			return addedSubLanguages;
 		}
 	}
 }
