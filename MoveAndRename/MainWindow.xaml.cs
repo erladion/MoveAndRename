@@ -815,6 +815,11 @@ namespace MoveAndRename
 			ls.AddRange(newSeriesDirectoriesOrFiles.Item2);
 
 			UpdateListbox(listBox1, CutPath(ls));
+			// TODO
+			//
+			// Fix here so that we don't search for sub files for the individual series files.
+			//
+
 			List<Series> s = ConvertStringToSeries(filesInDir);
 			List<Series> u = ConvertFileToSeries(newSeriesDirectoriesOrFiles.Item2);
 			Debug.WriteLine(u.Count);
