@@ -39,8 +39,8 @@ namespace MoveAndRename
 					foreach (var item in Enum.GetValues(typeof(VideoExtensions)))
 					{
 						Debug.WriteLine("Current item: " + item);
-						Debug.WriteLine(System.IO.Path.GetExtension(files[i]));
-						if (System.IO.Path.GetExtension(files[i]) == "." + item.ToString())
+						Debug.WriteLine(Path.GetExtension(files[i]));
+						if (Path.GetExtension(files[i]) == "." + item.ToString())
 						{
 							foundFiles.Add(files[i]);
 						}

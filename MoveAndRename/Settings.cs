@@ -17,9 +17,9 @@ namespace MoveAndRename
 		private HashSet<string> destinationList;
 		private bool includeNfo = false;
 		private bool includeSubtitle = true;
-		private HashSet<string> subtitleTypes;
+		//private HashSet<string> subtitleTypes;
 		private string tvdbKey;
-		private string movieDBKey;
+		private string tmdbKey;
 		private string customFormat;
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -64,8 +64,8 @@ namespace MoveAndRename
 			XElement apikeys = new XElement(ESettings.ApiKeys.ToString());
 			XElement tvdbkey = new XElement(ApiKeys.TVDB.ToString());
 			tvdbkey.SetAttributeValue("value", tvdbKey);
-			XElement moviedbkey = new XElement(ApiKeys.MovieDB.ToString());
-			moviedbkey.SetAttributeValue("value", movieDBKey);
+			XElement moviedbkey = new XElement(ApiKeys.TMDB.ToString());
+			moviedbkey.SetAttributeValue("value", tmdbKey);
 			apikeys.Add(tvdbkey);
 			apikeys.Add(moviedbkey);
 
@@ -157,16 +157,16 @@ namespace MoveAndRename
 					SetTVDBKey(str);
 				}
 
-				foreach (var item in doc.Descendants(ESettings.ApiKeys.ToString()).Elements("MovieDB"))
+				foreach (var item in doc.Descendants(ESettings.ApiKeys.ToString()).Elements("TMDB"))
 				{
 					try
 					{
 						string str = item.Attribute("value").Value;
-						SetMovieDBKey(str);
+						SetTMDBKey(str);
 					}
 					catch (Exception)
 					{
-						Utility.LogMessageToFile("No MovieDB key value");
+						Utility.LogMessageToFile("No TMDB key value");
 						throw;
 					}
 				}
@@ -272,9 +272,9 @@ namespace MoveAndRename
 			{
 				UpdateTVDBKey(key);
 			}
-			else if (type == "MovieDB")
+			else if (type == "TMDB")
 			{
-				UpdateMovieDBKey(key);
+				UpdateTMDBKey(key);
 			}
 		}
 
@@ -282,7 +282,7 @@ namespace MoveAndRename
 		private void SetTVDBKey(string key) => tvdbKey = key;
 
 		// Only used internally to not call the propertychanged method
-		private void SetMovieDBKey(string key) => movieDBKey = key;
+		private void SetTMDBKey(string key) => tmdbKey = key;
 
 		public void UpdateTVDBKey(string key)
 		{
@@ -290,9 +290,9 @@ namespace MoveAndRename
 			OnPropertyChanged("settings");
 		}
 
-		public void UpdateMovieDBKey(string key)
+		public void UpdateTMDBKey(string key)
 		{
-			movieDBKey = key;
+			tmdbKey = key;
 			OnPropertyChanged("settings");
 		}
 
@@ -358,11 +358,11 @@ namespace MoveAndRename
 			}
 		}
 
-		public string MovieDBKey
+		public string TMDBKey
 		{
 			get
 			{
-				return movieDBKey;
+				return tmdbKey;
 			}
 		}
 	}
