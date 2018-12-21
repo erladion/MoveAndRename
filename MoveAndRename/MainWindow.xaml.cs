@@ -842,14 +842,25 @@ namespace MoveAndRename
 					}
 					charsToRemove++;
 				}
-
+				
+				int count = 0;
+				foreach (var item in setObj.IncludeList)
+				{
+					if (Directory.GetParent(ser.CurrentPath).ToString() == item)
+					{
+						count++;
+					}
+				}
+				List<string> l = new List<string>();
 				// Cut our current path string at the end, removing as many chars as we just counted
 				string subStartPath = ser.CurrentPath.Substring(0, ser.CurrentPath.Length - charsToRemove);
-				Debug.WriteLine(subStartPath);
-				
-				// Search for sub files in the folder
-				List<string> l = FindSubFiles(subStartPath);
 
+				if (count == 0)
+				{
+					// Search for sub files in the folder
+					l = FindSubFiles(subStartPath);
+				}
+				
 				// Set the correct fields if we got a subtitle
 				if(l.Count > 0)
 				{
@@ -997,13 +1008,14 @@ namespace MoveAndRename
 
 			t = MovieUtility.FindMovieMatches(tmdb, new Movie("Godzilla", 2014));
 
+			/*
 			Dictionary<int, KeyValuePair<string, string>> test = MovieUtility.GetFileProps(@"2.Guns.2013.720p.BluRay.H264.AAC - RARBG.mp4");
 
 			foreach (var item in test)
 			{
 				Debug.WriteLine(item.Value);
 			}
-
+			*/
 			CreateMovie(str3).PrintMovie(); ;
 		}
 	}

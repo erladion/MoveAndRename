@@ -153,16 +153,22 @@ namespace MoveAndRename
 
 				foreach (var item in doc.Descendants(ESettings.ApiKeys.ToString()).Elements("TVDB"))
 				{
-					string str = item.Attribute("value").Value;
-					SetTVDBKey(str);
+					if (item.HasAttributes)
+					{
+						string str = item.Attribute("value").Value;
+						SetTVDBKey(str);
+					}
 				}
 
 				foreach (var item in doc.Descendants(ESettings.ApiKeys.ToString()).Elements("TMDB"))
 				{
 					try
 					{
-						string str = item.Attribute("value").Value;
-						SetTMDBKey(str);
+						if (item.HasAttributes)
+						{
+							string str = item.Attribute("value").Value;
+							SetTMDBKey(str);
+						}
 					}
 					catch (Exception)
 					{
