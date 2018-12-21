@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using TMDbLib.Client;
 
 namespace MoveAndRename
 {
@@ -29,10 +30,10 @@ namespace MoveAndRename
 		private Tuple<List<string>, List<string>> newSeriesDirectoriesOrFiles;
 		private FileController fc;
 		private TVDB tvdb;
+		private TMDbClient tmdb;
 
 		public MainWindow()
 		{
-			tvdb = CreateTVDBObj();
 			// If debug is set to true, we first allocate a console,
 			// then we create a listener for Debug.WriteLine so that our debug messages gets printed in the console.
 			if (debug)
@@ -43,7 +44,7 @@ namespace MoveAndRename
 			}
 			InitializeComponent();
 
-			Debug.WriteLine(System.Environment.GetEnvironmentVariable("TEMP"));
+			Debug.WriteLine(Environment.GetEnvironmentVariable("TEMP"));
 
 			refreshButton.VerticalAlignment = VerticalAlignment.Bottom;
 			listBox.Height = this.Height - 100;
@@ -52,6 +53,7 @@ namespace MoveAndRename
 			setObj.PropertyChanged += SettingsChanged;
 
 			fc = new FileController(setObj);
+			tvdb = CreateTVDBObj();
 
 			string[] cmdLine = Environment.GetCommandLineArgs();
 			if (cmdLine.Length > 0)
@@ -115,10 +117,14 @@ namespace MoveAndRename
 		[return: MarshalAs(UnmanagedType.Bool)]
 		static extern bool AllocConsole();
 
+		private TMDbClient CreateTMDbObj()
+		{
+			return new TMDbClient(setObj.TMDBKey);
+		}
+
 		private TVDB CreateTVDBObj()
 		{			
-			TVDB tvdb = new TVDB(setObj.TVDBKey);
-			return tvdb;
+			return new TVDB(setObj.TVDBKey);
 		}
 
 		private void SettingsChanged(object sender, PropertyChangedEventArgs e)
@@ -312,25 +318,26 @@ namespace MoveAndRename
 
 		private Series CreateSeriesFromFile(string s)
 		{
-			string path = s.Substring(0, s.Length - 4);
 			string[] splitStr = s.Split('\\');
 			string[] splitN = splitStr.Last().Split('.');
 			string ext = splitN.Last();
-			//string ext = s.Substring(s.Length - 3, 3);
+			string path = s.Substring(0, s.Length - ext.Length + 1);
 			string name = "";
 			string season = "";
 			string episode = "";
-			for (int i = 0; i < splitN.Length-1; i++)
+			foreach (var currentPart in splitN)
 			{
-				Match m = Regex.Match(splitN[i], @"S([0-9]+)E([0-9]+)$", RegexOptions.IgnoreCase);
+				Match m = Regex.Match(currentPart, @"S([0-9]+)E([0-9]+)$", RegexOptions.IgnoreCase);
 				if (m.Success)
 				{
-					string[] u = splitN[i].ToLower().Split('e');
+					// We split at e, so we will get sXX and YY
+					// so we know index 0 will have sXX and index 1 YY.
+					string[] u = currentPart.ToLower().Split('e');
 					season = u[0].TrimStart('s');
 					episode = u[1];
 					break;
 				}
-				name += splitN[i] + " ";
+				name += currentPart + " ";
 			}
 			name.TrimEnd(' ');
 			return new Series(name, Convert.ToInt32(season), Convert.ToInt32(episode), "", path, ext);
@@ -360,6 +367,57 @@ namespace MoveAndRename
 				}
 			}
 			return new Series();
+		}
+
+		private Movie CreateMovie(string str)
+		{
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
+			Debug.WriteLine("Input string: " + str);
+			string[] s = str.Split('\\');
+
+			string ext = str.Split('.').Last();
+			Debug.WriteLine("Extension: " + ext);
+
+			string name = "";
+			string year = "";
+			bool gotYear = false;
+			foreach (var part in s.Last().Split('.').Reverse())
+			{
+				Debug.WriteLine("Current part of the string: " + part);
+				if (!gotYear)
+				{
+					Match t = Regex.Match(part, @"^\d{4}$");
+
+					// Since we are looping backwards we know that we will get the year of the movie first, then the name.
+					if (t.Success)
+					{
+						Debug.WriteLine("Succes!, we got the year");
+						gotYear = true;
+						year = t.Value;
+					}
+					else
+					{
+						continue;
+					}
+				}
+				else
+				{
+					name = name.Insert(0, part + " ");
+				}
+			}
+			name = name.TrimEnd(' ');
+			Debug.WriteLine("Gotten name: " + name);
+
+			if(gotYear != false)
+			{
+				return new Movie(name, year)
+				{
+					CurrentPath = str,
+					Extension = ext
+				};
+			}
+
+			return new Movie();
 		}
 
 		/*
@@ -441,6 +499,23 @@ namespace MoveAndRename
 
 			var results = obj.Search(series.Name);
 
+			if(results.Count == 0)
+			{
+				// If we get no match (probably because of weird additions to the name, we try to match it with currently exisiting folders and use the one with highest score)
+				List<string> dirs = new List<string>();
+				foreach (var item in setObj.DestinationList)
+				{
+					dirs.AddRange(Directory.GetDirectories(item));
+				}
+				Tuple<string, double> res = FindBestStringMatch(dirs, series.Name);
+
+				Debug.WriteLine("Got no match with tvdb");
+				Debug.WriteLine("Best matching folder already existing");
+				Debug.WriteLine(res.Item1);
+				Debug.WriteLine(res.Item2);
+				results = obj.Search(res.Item1.Split('\\').Last());
+			}
+
 			foreach (var ser in results)
 			{
 				foreach (var episode in ser.Episodes)
@@ -477,7 +552,8 @@ namespace MoveAndRename
 
         private Tuple<string, double> FindBestStringMatch(List<string> list, string str)
         {
-            list.Sort();
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
+			list.Sort();
             List<StringCostObj> impList = new List<StringCostObj>();
             for (int i = 0; i < list.Count; i++)
             {
@@ -505,14 +581,14 @@ namespace MoveAndRename
                 impList.Add(temp);
             }
              
-            foreach (var item in impList)
+            foreach (var path in impList)
             {
-                foreach (var it in setObj.DestinationList)
+                foreach (var destPath in setObj.DestinationList)
                 {
-                    if (item.GetChanged().Contains(it.ToLower()))
+                    if (path.GetChanged().Contains(destPath.ToLower()))
                     {
-                        var cosineCost = Utility.CosineSimilarity(item.GetChanged().Replace(it.ToLower(), ""), str.ToLower(), 2);
-                        item.SetCost(cosineCost);
+                        var cosineCost = Utility.CosineSimilarity(path.GetChanged().Replace(destPath.ToLower(), ""), str.ToLower(), 2);
+						path.SetCost(cosineCost);
                     }
                 }
                 
@@ -589,7 +665,7 @@ namespace MoveAndRename
 			foreach (var item in setObj.DestinationList)
 			{
 				string[] subDirectories = Directory.GetDirectories(item);
-
+				
 				if (subDirectories.Length == 0)
 				{
 					break;
@@ -843,7 +919,7 @@ namespace MoveAndRename
 			// We got no current folder for the series, so we create one.
 			if (destinationPath.Length == 0)
 			{
-				Debug.WriteLine("No folder exists for the series, so we create one");				
+				Debug.WriteLine("No folder exists for the series, so we create one");
 				if (setObj.DestinationList.Count > 1)
 				{
 					ChoiceWindow cw = new ChoiceWindow(setObj.DestinationList);
@@ -867,7 +943,16 @@ namespace MoveAndRename
 
 			Debug.WriteLine("Series title: " + s.Title);
 
-			destinationPath += String.Format("\\{0} - {1}{2} - {3}.{4}", s.Name, s.Season, (s.Episode < 10 ? "x0" : "x") + s.Episode, s.Title, s.Extension);
+			Tuple<List<int>, string> format = Utility.ParseSeriesFormat(setObj.CustomFormat);
+			if ((setObj.CustomFormat != "" || setObj.CustomFormat != null) && format.Item2 != "") {
+				string fm = "\\"+format.Item2;
+				destinationPath += String.Format(fm, Utility.SeriesParameters);
+				destinationPath += String.Format(fm, s.Name, s.Season, s.Episode, s.Title);
+			}
+			else
+			{
+				destinationPath += String.Format("\\{0} - {1}{2} - {3}.{4}", s.Name, s.Season, (s.Episode < 10 ? "x0" : "x") + s.Episode, s.Title, s.Extension);
+			}
 
 			//destinationPath += '\\' + s.Name + " - " + s.Season + (s.Episode < 10 ? "x0" : "x") + s.Episode + " - " + s.Title + "." + s.Extension;
 
@@ -889,13 +974,32 @@ namespace MoveAndRename
 			Debug.WriteLine("------Testing------");
 
 			string str1 = "Q:\\TestFiles\\Quantico.S01E02.randomstuff\\Quantico.S01E02.randomstuff.mp4";
-			
-			Debug.WriteLine(String.Format("Current string: {0}", str1));
-			//Series a = CreateSeriesTest(str1);
-			//a.PrintSeries();
+			string str2 = "Q:\\TestFiles\\The.Good.Doctor.s01e04.test\\The.Good.Doctor.s01e04.test.mkv";
+			string str3 = "Q:\\TestFiles\\GoodMovie.2015.1080p.randomstuff\\GoodMovie.2015.1080p.randomstuff.mp4";
 
-			Series s = CreateSeries(str1);
+			Debug.WriteLine(String.Format("Current string: {0}", str2));
+
+			Series s = CreateSeries(str2);
+			string str = GetDestinationPath(s);
 			s.PrintSeries();
+			Debug.WriteLine(str);
+
+			Tuple<List<int>, string> parsedFormat = Utility.ParseSeriesFormat("Name . Season - Episode");
+			Debug.WriteLine(parsedFormat.Item2);
+
+			tmdb = CreateTMDbObj();
+			HashSet<Movie> t;
+
+			t = MovieUtility.FindMovieMatches(tmdb, new Movie("Godzilla", 2014));
+
+			Dictionary<int, KeyValuePair<string, string>> test = MovieUtility.GetFileProps(@"2.Guns.2013.720p.BluRay.H264.AAC - RARBG.mp4");
+
+			foreach (var item in test)
+			{
+				Debug.WriteLine(item.Value);
+			}
+
+			CreateMovie(str3).PrintMovie(); ;
 		}
 	}
 
