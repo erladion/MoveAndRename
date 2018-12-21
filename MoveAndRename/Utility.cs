@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,6 +12,17 @@ namespace MoveAndRename
 {
 	class Utility
 	{
+		// Will be a string[] for now since all we do with it is to index into it.
+		public static string[] ParameterArray = { "Name", "Season", "Episode", "Title" };
+
+		// Makes it so we can get the index for each of the parameters in the ParameterArray
+		public static Dictionary<string, int> SeriesParameters	 = new Dictionary<string, int> {
+			{ "Name",0 },
+			{ "Season",1},
+			{ "Episode",2},
+			{ "Title",3} };
+		
+
 		public static void LogMessageToFile(string msg)
 		{
 			Debug.WriteLine("-----Writing message to log-----");
@@ -35,29 +47,43 @@ namespace MoveAndRename
 		/// </summary>
 		/// <param name="str"></param>
 		/// <returns></returns>
-		public static string ParseSeriesFormat(string str)
+		public static Tuple<List<int>, string> ParseSeriesFormat(string str)
 		{
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
+			if (str == "" || str == null)
+			{
+				return new Tuple<List<int>, string>(new List<int>(),"");
+			}
 			// Valid parameters:
 			// Name (name of the series), Episode, Season, Title (name of the episode)
 			string temp = SanitizeString(str);
 
-			if(temp.Length == str.Length)
-			{
-				string[] arr = { "Name", "Episode", "Season", "Title" };
-
+			if (temp.Length == str.Length)
+			{				
 				int i = 0;
-				foreach (var item in arr)
+
+				if (!temp.Contains(ParameterArray[0]) && !temp.Contains(ParameterArray[3]))
 				{
+					return new Tuple<List<int>, string>(new List<int>(), "");
+				}
+				List<int> indexes = new List<int>();
+				
+				foreach (var item in ParameterArray)
+				{
+					string t2 = temp;
 					temp = temp.Replace(item, "{" + i + "}");
+					if(t2.Length > temp.Length)
+					{
+						indexes.Add(SeriesParameters[item]);
+					}
 					i++;
 				}
-				return temp;
+				return new Tuple<List<int>, string>(indexes, temp);
 			}
 			else
 			{
-				return "";
-			}
-			
+				return new Tuple<List<int>, string>(new List<int>(), "");
+			}			
 		}
 
 		/// <summary>
@@ -116,6 +142,11 @@ namespace MoveAndRename
 		/// <returns></returns>
 		public static double CosineSimilarity(string a, string b, int nGrams)
 		{
+			if(nGrams > a.Length || nGrams > b.Length)
+			{
+				return 0;
+			}
+
 			List<string> aNGrams = CreateNGrams(a, nGrams);
 			List<string> bNGrams = CreateNGrams(b, nGrams);
 
@@ -135,9 +166,7 @@ namespace MoveAndRename
 				dotProduct += (aFreq[i] * bFreq[i]);
 			}
 
-			double ret = dotProduct / (Magnitude(aFreq) * Magnitude(bFreq));
-
-			return ret;
+			return (dotProduct / (Magnitude(aFreq) * Magnitude(bFreq)));
 		}
 
 		/// <summary>
@@ -147,6 +176,11 @@ namespace MoveAndRename
 		/// <returns></returns>
 		public static string SanitizeString(string str)
 		{
+			if(str == null || str == "")
+			{
+				return "";
+			}
+			Debug.WriteLine(String.Format("-----Currently in {0}-----", MethodBase.GetCurrentMethod().Name));
 			Debug.WriteLine("Input string: " + str);
 			string retStr = "";
 
@@ -172,6 +206,5 @@ namespace MoveAndRename
 			}
 			return retStr;
 		}
-
 	}
 }
