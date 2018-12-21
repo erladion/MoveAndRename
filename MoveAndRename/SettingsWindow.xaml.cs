@@ -28,7 +28,7 @@ namespace MoveAndRename
 	enum ApiKeys
 	{
 		TVDB,
-		MovieDB
+		TMDB
 	}
 
 	enum VideoExtensions
@@ -121,9 +121,9 @@ namespace MoveAndRename
 			lb.Height = settingsHeight * 0.63;
 		}
 
-		private void AddPathsControls()
+		private Grid GetPathsControls()
 		{
-			Content.Children.Clear();
+			Grid g = new Grid();
 
 			lb = new ListBox
 			{
@@ -132,7 +132,7 @@ namespace MoveAndRename
 				VerticalAlignment = VerticalAlignment.Top,
 				HorizontalAlignment = HorizontalAlignment.Right
 			};
-			Content.Children.Add(lb);
+			g.Children.Add(lb);
 
 			Button add = new Button
 			{
@@ -145,7 +145,7 @@ namespace MoveAndRename
 			};
 
 			add.Click += new RoutedEventHandler(Add_Click);
-			Content.Children.Add(add);
+			g.Children.Add(add);
 
 			Button remove = new Button
 			{
@@ -157,19 +157,19 @@ namespace MoveAndRename
 				Margin = new Thickness(add.Width + 5, 0, 0, 0)
 			};
 			remove.Click += new RoutedEventHandler(Remove_Click);
-			Content.Children.Add(remove);			
+			g.Children.Add(remove);
+			return g;
 		}
 
-		private void AddFileTypesControls(object sender)
+		private Grid GetFileTypesControls(object sender)
 		{
-			Content.Children.Clear();
+			Grid g = new Grid();
 			Content.VerticalAlignment = VerticalAlignment.Top;
 			TextBlock tb = new TextBlock();			
 			tb.Text = "Check this to include " + sender.ToString() + " in the search space";
 			tb.TextWrapping = TextWrapping.WrapWithOverflow;			
 			tb.Measure(new Size());
 			tb.Arrange(new Rect());			
-			Content.Children.Add(tb);
 
 			double tbH = tb.ActualHeight;
 			CheckBox cb = new CheckBox
@@ -181,14 +181,15 @@ namespace MoveAndRename
 			};
 			cb.Unchecked += Cb_Unchecked;
 			cb.Checked += Cb_Checked;
-            
-			Content.Children.Add(cb);
+
+			g.Children.Add(tb);
+			g.Children.Add(cb);
+
+			return g;
 		}
 
-		private void AddAPIKeyControls(string s)
+		private Grid GetAPIKeyControls(string s)
 		{ 
-			Content.Children.Clear();
-
 			Grid g = new Grid();
 			TextBlock t = new TextBlock
 			{
@@ -206,7 +207,7 @@ namespace MoveAndRename
 				VerticalAlignment = VerticalAlignment.Top,
 				Margin = new Thickness(5, 20, 0, 0),
 				HorizontalAlignment = HorizontalAlignment.Left,
-				Text = (s == "TVDB" ? settingsObj.TVDBKey : settingsObj.MovieDBKey)
+				Text = (s == "TVDB" ? settingsObj.TVDBKey : settingsObj.TMDBKey)
 			};
 
 			Button b = new Button
@@ -223,10 +224,10 @@ namespace MoveAndRename
 			g.Children.Add(t);
 			g.Children.Add(tb);
 			g.Children.Add(b);
-			Content.Children.Add(g);
+			return g;
 		}
 
-		private void AddFormatControls()
+		private Grid GetFormatControls()
 		{
 			Content.Children.Clear();
 
@@ -284,7 +285,7 @@ namespace MoveAndRename
 			g.Children.Add(t);
 			g.Children.Add(tb);
 			g.Children.Add(b);
-			Content.Children.Add(g);
+			return g;
 		}
 
 		private void Cb_Unchecked(object sender, RoutedEventArgs e)
@@ -307,15 +308,20 @@ namespace MoveAndRename
             }
 		}
 
+		private void UpdateControls(Grid g)
+		{
+			Content.Children.Clear();
+			Content.Children.Add(g);
+		}
+
 		private void Update_Click(object sender, EventArgs e, string key, string type)
 		{
-			//settingsObj.UpdateAPIKey();
 			settingsObj.UpdateTVDBKey(key);
 		}
 
 		private void SetFormat_Click(object sender, EventArgs e, string format)
 		{
-			settingsObj.SetCustomFormat(Utility.ParseSeriesFormat(format));
+			settingsObj.SetCustomFormat(Utility.ParseSeriesFormat(format).Item2);
 		}
 
 		private void Remove_Click(object sender, EventArgs e)
@@ -383,31 +389,31 @@ namespace MoveAndRename
 			switch (treeView.SelectedItem.ToString())
 			{
 				case nameof(Paths.Include):
-					AddPathsControls();
+					UpdateControls(GetPathsControls());
 					UpdateListbox(lb, settingsObj.IncludeList);
 					break;
 				case nameof(Paths.Exclude):
-					AddPathsControls();
+					UpdateControls(GetPathsControls());
 					UpdateListbox(lb, settingsObj.ExcludeList);
 					break;
 				case nameof(Paths.Destinations):
-					AddPathsControls();
+					UpdateControls(GetPathsControls());
 					UpdateListbox(lb, settingsObj.DestinationList);
 					break;
 				case nameof(FileTypes.Episode):
-					AddFileTypesControls(treeView.SelectedItem);
+					UpdateControls(GetFileTypesControls(treeView.SelectedItem));
 					break;
 				case nameof(FileTypes.Subtitle):
-					AddFileTypesControls(treeView.SelectedItem);
+					UpdateControls(GetFileTypesControls(treeView.SelectedItem));
 					break;
 				case nameof(ApiKeys.TVDB):
-					AddAPIKeyControls("TVDB");
+					UpdateControls(GetAPIKeyControls("TVDB"));
 					break;
-				case nameof(ApiKeys.MovieDB):
-					AddAPIKeyControls("MovieDB");
+				case nameof(ApiKeys.TMDB):
+					UpdateControls(GetAPIKeyControls("MovieDB"));
 					break;
 				case nameof(ESettings.CustomFormat):
-					AddFormatControls();
+					UpdateControls(GetFormatControls());
 					break;
 				default:
 					break;
