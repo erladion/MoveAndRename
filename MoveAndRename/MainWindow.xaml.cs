@@ -321,7 +321,7 @@ namespace MoveAndRename
 			string[] splitStr = s.Split('\\');
 			string[] splitN = splitStr.Last().Split('.');
 			string ext = splitN.Last();
-			string path = s.Substring(0, s.Length - ext.Length + 1);
+			string path = s.Substring(0, s.Length - ext.Length - 1);
 			string name = "";
 			string season = "";
 			string episode = "";
